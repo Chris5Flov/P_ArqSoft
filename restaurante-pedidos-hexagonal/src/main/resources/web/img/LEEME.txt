@@ -1,0 +1,9 @@
+IMAGENES DEL SISTEMA (todas opcionales; sin archivo se ve un fondo o un icono)
+
+img/portada.jpg        Banda superior bajo el encabezado. Recomendado: horizontal, ~1600 x 400 px.
+img/logo.png           Logo en el encabezado (reemplaza al icono). Recomendado: PNG transparente, ~88 px de alto.
+img/platos/<ID>.jpg    Foto de cada plato. El nombre del archivo es el ID del plato, por ejemplo
+                       img/platos/P-001.jpg. Tambien funciona .png. Recomendado: 4:3, ~800 x 600 px.
+
+Formatos: usa jpg o png (el servidor no tiene registrado webp).
+Para ver los cambios sin recompilar: mvn compile exec:java -Dweb.dir=src/main/resources/web
