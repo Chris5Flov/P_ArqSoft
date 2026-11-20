@@ -27,28 +27,35 @@
 }
 */
 
+/* Tema "carta": papel hueso, verde botella y latón. */
 :root {
-    --color-primario: #4c8dff;
-    --color-fondo: #0f1318;
-    --color-superficie: #171c24;
-    --color-texto: #eef2f6;
-    --color-borde: #2a3240;
-    --color-exito: #2ea043;
-    --color-peligro: #f85149;
-    --color-aviso: #d29922;
-    --color-coccion: #f0883e;
-    --radio: 8px;
+    --color-primario: #530a1b;
+    --color-fondo: #ece8dd;
+    --color-superficie: #fbfaf6;
+    --color-texto: #000000;
+    --color-borde: #d8d1c0;
+    --color-borde-fuerte: #b9b09b;
+    --color-exito: #2f6b3f;
+    --color-peligro: #8a2c38;
+    --color-aviso: #9a6b0f;
+    --color-coccion: #b4561b;
+    --radio: 4px;
     --espacio: 16px;
 
-    --color-texto-secundario: #9aa5b4;
-    --color-primario-suave: rgba(76, 141, 255, 0.16);
-    --color-exito-suave: rgba(46, 160, 67, 0.16);
-    --color-peligro-suave: rgba(248, 81, 73, 0.16);
-    --color-aviso-suave: rgba(210, 153, 34, 0.16);
-    --color-coccion-suave: rgba(240, 136, 62, 0.16);
-    --color-neutro-suave: #202733;
-    --sombra: 0 2px 8px rgba(0, 0, 0, 0.35);
-    --fuente: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --color-texto-secundario: #530a1b;
+    --color-primario-suave: rgba(194, 115, 41, 0.09);
+    --color-exito-suave: #e3eee5;
+    --color-peligro-suave: #f4e3e5;
+    --color-aviso-suave: #f6ecd2;
+    --color-coccion-suave: #f6e6da;
+    --color-neutro-suave: #e6e1d4;
+    --color-marca: #3b1e22;
+    --color-marca-profundo: #271514;
+    --color-marca-texto: #f3eee3;
+    --color-laton: #c29a4a;
+    --sombra: 0 1px 0 rgba(31, 36, 33, 0.06);
+    --fuente: "Hanken Grotesk", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    --fuente-titulo: "Gloock", Georgia, "Times New Roman", serif;
 }
 *,
 *::before,
@@ -63,8 +70,8 @@ html {
 body {
     margin: 0;
     font-family: var(--fuente);
-    font-size: 15px;
-    line-height: 1.45;
+    font-size: 16px;
+    line-height: 1.5;
     color: var(--color-texto);
     background: var(--color-fondo);
     overflow-x: hidden;
@@ -72,7 +79,9 @@ body {
 
 h1, h2, h3, h4 {
     margin: 0;
-    line-height: 1.25;
+    line-height: 1.2;
+    font-family: var(--fuente-titulo);
+    font-weight: 400;
 }
 
 p {
@@ -161,19 +170,6 @@ p {
 
 .pestana--activa .pestana__actor {
     color: var(--color-primario);
-}
-
-.encabezado__icono {
-    font-size: 1.5rem;
-    color: var(--color-primario);
-}
-
-.pestana__icono {
-    font-size: 22px;
-}
-
-.pestana--activa .pestana__icono {
-    font-variation-settings: "FILL" 1;
 }
 
 /* ---------------------------------------------------------------- estructura */
@@ -458,7 +454,7 @@ select:disabled {
 }
 
 .boton--primario:hover:not(:disabled) {
-    background: #1a5fcc;
+    background: var(--color-marca-profundo);
 }
 
 .boton--peligro {
@@ -468,7 +464,7 @@ select:disabled {
 }
 
 .boton--peligro:hover:not(:disabled) {
-    background: #b11c27;
+    background: #6b1f2a;
 }
 
 .boton--secundario {
@@ -945,6 +941,187 @@ select:disabled {
     justify-content: flex-end;
     flex-wrap: wrap;
     gap: 8px;
+}
+
+/* ---------------------------------------------------------------- carta: marca, portada y platos */
+
+.encabezado {
+    background: var(--color-marca);
+    color: var(--color-marca-texto);
+    border-bottom: 3px solid var(--color-laton);
+    box-shadow: none;
+}
+
+.encabezado__titulo {
+    font-size: 1.7rem;
+    letter-spacing: 0.01em;
+    color: var(--color-marca-texto);
+}
+
+.encabezado__icono {
+    font-size: 1.9rem;
+    color: var(--color-laton);
+}
+
+.encabezado__logo {
+    height: 44px;
+    width: auto;
+}
+
+.encabezado__logo + .encabezado__icono {
+    display: none;
+}
+
+.etiqueta-simulador {
+    padding: 2px 8px;
+    border: 1px solid var(--color-laton);
+    border-radius: 999px;
+    font-size: 0.72rem;
+    color: var(--color-laton);
+}
+
+.pestana {
+    color: rgba(243, 238, 227, 0.85);
+}
+
+.pestana:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.pestana:focus-visible {
+    outline-color: var(--color-laton);
+}
+
+.pestana__actor {
+    color: rgba(243, 238, 227, 0.6);
+}
+
+.pestana__icono {
+    font-size: 22px;
+}
+
+.pestana--activa {
+    background: rgba(255, 255, 255, 0.1);
+    border-bottom-color: var(--color-laton);
+    color: #fff;
+}
+
+.pestana--activa .pestana__actor {
+    color: var(--color-laton);
+}
+
+.pestana--activa .pestana__icono {
+    font-variation-settings: "FILL" 1;
+}
+
+/* Portada: img/portada.jpg. Si el archivo no existe, quedan el punteado y el verde. */
+.portada {
+    height: clamp(110px, 16vw, 190px);
+    background:
+        linear-gradient(rgba(20, 39, 31, 0.25), rgba(20, 39, 31, 0.25)),
+        url("../img/portada.jpg") center / cover no-repeat,
+        radial-gradient(circle at 1px 1px, rgba(194, 154, 74, 0.35) 1px, transparent 0) 0 0 / 14px 14px,
+        var(--color-marca-profundo);
+}
+
+.vista__titulo {
+    font-size: 1.9rem;
+}
+
+.tarjeta__titulo {
+    font-size: 1.4rem;
+}
+
+.tarjeta__subtitulo {
+    font-size: 1.05rem;
+}
+
+.carta {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+    gap: var(--espacio);
+}
+
+.carta__mensaje {
+    grid-column: 1 / -1;
+}
+
+.plato {
+    display: flex;
+    flex-direction: column;
+    background: var(--color-superficie);
+    border: 1px solid var(--color-borde);
+    border-radius: var(--radio);
+    overflow: hidden;
+}
+
+/* Espacio de la foto: img/platos/<ID del plato>.jpg (o .png). Sin foto se ve el icono. */
+.plato__foto {
+    position: relative;
+    display: grid;
+    place-items: center;
+    aspect-ratio: 4 / 3;
+    background: var(--color-neutro-suave);
+    color: var(--color-borde-fuerte);
+}
+
+.plato__foto .material-symbols-outlined {
+    font-size: 48px;
+}
+
+.plato__imagen {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.plato__cuerpo {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+    padding: 12px 14px 14px;
+}
+
+.plato__linea {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+}
+
+.plato__nombre {
+    font-size: 1.2rem;
+    overflow-wrap: anywhere;
+}
+
+.plato__puntos {
+    flex: 1;
+    min-width: 16px;
+    border-bottom: 2px dotted var(--color-borde-fuerte);
+}
+
+.plato__precio {
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--color-primario);
+}
+
+.plato__meta {
+    font-size: 0.82rem;
+    color: var(--color-texto-secundario);
+}
+
+.plato__acciones {
+    margin-top: auto;
+    padding-top: 10px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .notificacion {
+        animation: none;
+    }
 }
 
 /* ---------------------------------------------------------------- diseño adaptable */
