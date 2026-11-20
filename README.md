@@ -34,3 +34,5 @@ Desde el IDE: ejecuta `MainWeb` (web) o `Main` (consola). Ambos aceptan el argum
 - [Arquitectura y reglas de negocio](restaurante-pedidos-hexagonal/docs/arquitectura-base.md)
 - [Contrato de la API REST](restaurante-pedidos-hexagonal/docs/interfaz/contrato-api.md)
 - [Diagramas](restaurante-pedidos-hexagonal/docs/diagramas/)
+=======
+# P_ArqSoft
