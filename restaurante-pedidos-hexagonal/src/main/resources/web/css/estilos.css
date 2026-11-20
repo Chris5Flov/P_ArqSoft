@@ -1,7 +1,7 @@
 /* ==========================================================================
    Sistema de Pedidos: estilos generales
    ========================================================================== */
-
+/*
 :root {
     --color-primario: #1f6feb;
     --color-fondo: #f6f7f9;
@@ -25,7 +25,31 @@
     --sombra: 0 1px 2px rgba(29, 33, 41, 0.06), 0 1px 3px rgba(29, 33, 41, 0.08);
     --fuente: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
+*/
 
+:root {
+    --color-primario: #4c8dff;
+    --color-fondo: #0f1318;
+    --color-superficie: #171c24;
+    --color-texto: #eef2f6;
+    --color-borde: #2a3240;
+    --color-exito: #2ea043;
+    --color-peligro: #f85149;
+    --color-aviso: #d29922;
+    --color-coccion: #f0883e;
+    --radio: 8px;
+    --espacio: 16px;
+
+    --color-texto-secundario: #9aa5b4;
+    --color-primario-suave: rgba(76, 141, 255, 0.16);
+    --color-exito-suave: rgba(46, 160, 67, 0.16);
+    --color-peligro-suave: rgba(248, 81, 73, 0.16);
+    --color-aviso-suave: rgba(210, 153, 34, 0.16);
+    --color-coccion-suave: rgba(240, 136, 62, 0.16);
+    --color-neutro-suave: #202733;
+    --sombra: 0 2px 8px rgba(0, 0, 0, 0.35);
+    --fuente: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
 *,
 *::before,
 *::after {
@@ -66,9 +90,9 @@ p {
     top: 0;
     z-index: 10;
     display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: space-between;
-    gap: var(--espacio);
+    gap: 10px;
     padding: 10px calc(var(--espacio) * 1.5);
     background: var(--color-superficie);
     border-bottom: 1px solid var(--color-borde);
@@ -78,31 +102,25 @@ p {
 .encabezado__marca {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 10px;
     flex-wrap: wrap;
+    width: 100%;
     min-width: 0;
 }
 
 .encabezado__titulo {
+    margin: 0;
     font-size: 1.2rem;
     font-weight: 700;
-}
-
-.etiqueta-simulador {
-    padding: 3px 8px;
-    border-radius: 999px;
-    background: var(--color-aviso-suave);
-    color: #7a5600;
-    border: 1px solid var(--color-aviso);
-    font-size: 0.72rem;
-    font-weight: 700;
-    letter-spacing: 0.04em;
+    text-align: center;
 }
 
 .navegacion {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 4px;
+    width: 100%;
 }
 
 .pestana {
@@ -143,6 +161,19 @@ p {
 
 .pestana--activa .pestana__actor {
     color: var(--color-primario);
+}
+
+.encabezado__icono {
+    font-size: 1.5rem;
+    color: var(--color-primario);
+}
+
+.pestana__icono {
+    font-size: 22px;
+}
+
+.pestana--activa .pestana__icono {
+    font-variation-settings: "FILL" 1;
 }
 
 /* ---------------------------------------------------------------- estructura */
@@ -920,7 +951,6 @@ select:disabled {
 
 @media (max-width: 800px) {
     .encabezado {
-        flex-direction: column;
         align-items: stretch;
         gap: 8px;
         padding: 8px var(--espacio);
