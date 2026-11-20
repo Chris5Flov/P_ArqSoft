@@ -14,7 +14,7 @@ export function montar(contenedor) {
     let activa = true;
 
     // ------------------------------------------------------------ platos
-    const cuerpoPlatos = crear("tbody");
+    const carta = crear("div", { class: "carta" });
     const idPlato = crear("input", { type: "text", id: "plato-id", autocomplete: "off", placeholder: "P-001" });
     const nombrePlato = crear("input", { type: "text", id: "plato-nombre", autocomplete: "off", placeholder: "Tacos al pastor" });
     const precioPlato = crear("input", { type: "text", id: "plato-precio", inputmode: "decimal", autocomplete: "off", placeholder: "85.50" });
@@ -51,17 +51,16 @@ export function montar(contenedor) {
 
     contenedor.appendChild(crear("section", { class: "vista" },
         crear("div", { class: "vista__encabezado" }, crear("h2", { class: "vista__titulo" }, "Menú")),
-        crear("div", { class: "columnas" },
-            crear("section", { class: "tarjeta" },
-                crear("h2", { class: "tarjeta__titulo" }, "Platos"),
-                tabla(["ID", "Nombre", "Precio", "Impuesto", "Acciones"], [2, 3], cuerpoPlatos),
-                crear("hr", { class: "separador" }),
-                formularioPlato),
-            crear("section", { class: "tarjeta" },
-                crear("h2", { class: "tarjeta__titulo" }, "Modificadores"),
-                tabla(["ID", "Nombre", "Tipo", "Costo extra", "Acciones"], [3], cuerpoModificadores),
-                crear("hr", { class: "separador" }),
-                formularioModificador))));
+        crear("section", { class: "tarjeta" },
+            crear("h2", { class: "tarjeta__titulo" }, "Platos"),
+            carta,
+            crear("hr", { class: "separador" }),
+            formularioPlato),
+        crear("section", { class: "tarjeta" },
+            crear("h2", { class: "tarjeta__titulo" }, "Modificadores"),
+            tabla(["ID", "Nombre", "Tipo", "Costo extra", "Acciones"], [3], cuerpoModificadores),
+            crear("hr", { class: "separador" }),
+            formularioModificador)));
 
     cargarPlatos();
     cargarModificadores();
@@ -71,28 +70,23 @@ export function montar(contenedor) {
     // ------------------------------------------------------------ acciones
 
     async function cargarPlatos() {
-        if (!cuerpoPlatos.firstChild) {
-            filaMensaje(cuerpoPlatos, 5, "Cargando platos…", "cargando");
+        if (!carta.firstChild) {
+            mensajeCarta(carta, "Cargando platos…", "cargando");
         }
         try {
             const platos = await listarPlatos();
             if (!activa) return;
-            limpiar(cuerpoPlatos);
+            limpiar(carta);
             if (platos.length === 0) {
-                filaMensaje(cuerpoPlatos, 5, "Aún no hay platos registrados.");
+                mensajeCarta(carta, "Aún no hay platos. Registra el primero con el formulario de abajo.");
                 return;
             }
             for (const plato of platos) {
-                cuerpoPlatos.appendChild(crear("tr", {},
-                    crear("td", {}, plato.id),
-                    crear("td", {}, plato.nombre),
-                    crear("td", { class: "numero" }, formatoDinero(plato.precioBase)),
-                    crear("td", { class: "numero" }, formatoPorcentaje(plato.tasaImpuesto)),
-                    crear("td", { class: "acciones" }, botonesFila(() => editarPlato(plato), () => pedirEliminarPlato(plato)))));
+                carta.appendChild(tarjetaPlato(plato, () => editarPlato(plato), () => pedirEliminarPlato(plato)));
             }
         } catch (error) {
             if (!activa) return;
-            filaMensaje(cuerpoPlatos, 5, "No se pudieron cargar los platos.");
+            mensajeCarta(carta, "No se pudieron cargar los platos.");
             mostrarError(error);
         }
     }
@@ -316,4 +310,46 @@ function tabla(encabezados, columnasNumericas, cuerpo) {
 
 function filaMensaje(cuerpo, columnas, mensaje, clase = "texto-secundario") {
     limpiar(cuerpo).appendChild(crear("tr", {}, crear("td", { colspan: columnas, class: clase }, mensaje)));
+}
+
+// ---------------------------------------------------------------- carta de platos
+
+/** Las fotos viven en web/img/platos/<ID del plato>.jpg (o .png); si no existe, se queda el icono. */
+const EXTENSIONES_FOTO = ["jpg", "png"];
+
+function rutaFoto(id, intento) {
+    return `img/platos/${encodeURIComponent(id)}.${EXTENSIONES_FOTO[intento]}`;
+}
+
+function fotoPlato(plato) {
+    let intento = 0;
+    const imagen = crear("img", { class: "plato__imagen", alt: `Foto de ${plato.nombre}`, loading: "lazy" });
+    imagen.addEventListener("error", () => {
+        intento += 1;
+        if (intento < EXTENSIONES_FOTO.length) {
+            imagen.src = rutaFoto(plato.id, intento);
+        } else {
+            imagen.remove();
+        }
+    });
+    imagen.src = rutaFoto(plato.id, 0);
+    return crear("div", { class: "plato__foto" },
+        crear("span", { class: "material-symbols-outlined", "aria-hidden": "true" }, "restaurant"),
+        imagen);
+}
+
+function tarjetaPlato(plato, alEditar, alEliminar) {
+    return crear("article", { class: "plato" },
+        fotoPlato(plato),
+        crear("div", { class: "plato__cuerpo" },
+            crear("div", { class: "plato__linea" },
+                crear("h3", { class: "plato__nombre" }, plato.nombre),
+                crear("span", { class: "plato__puntos", "aria-hidden": "true" }),
+                crear("span", { class: "plato__precio" }, formatoDinero(plato.precioBase))),
+            crear("p", { class: "plato__meta" }, `Código ${plato.id}, impuesto ${formatoPorcentaje(plato.tasaImpuesto)}`),
+            crear("div", { class: "plato__acciones" }, botonesFila(alEditar, alEliminar))));
+}
+
+function mensajeCarta(carta, mensaje, clase = "texto-vacio") {
+    limpiar(carta).appendChild(crear("p", { class: `carta__mensaje ${clase}` }, mensaje));
 }
