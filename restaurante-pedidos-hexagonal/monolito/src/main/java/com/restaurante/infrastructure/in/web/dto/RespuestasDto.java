@@ -11,8 +11,7 @@ public final class RespuestasDto {
     private RespuestasDto() {
     }
 
-    public record PlatoDto(String id, String nombre, String precioBase, String tasaImpuesto) { }
-
+    /** Modificador dentro de una línea de pedido, con el costo extra con el que se aplicó. */
     public record ModificadorDto(String id, String nombre, String tipo, String costoExtra) { }
 
     public record TotalesDto(String subtotal, String descuento, String impuestos, String propina, String total) { }

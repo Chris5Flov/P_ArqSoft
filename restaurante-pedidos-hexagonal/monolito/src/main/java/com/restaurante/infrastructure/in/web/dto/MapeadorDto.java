@@ -1,9 +1,7 @@
 package com.restaurante.infrastructure.in.web.dto;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 import com.restaurante.application.port.in.GestionarCocinaUseCase.LineaEnCocina;
@@ -12,30 +10,22 @@ import com.restaurante.domain.Modificador;
 import com.restaurante.domain.ModificadorAplicado;
 import com.restaurante.domain.Orden;
 import com.restaurante.domain.Pago;
-import com.restaurante.domain.Plato;
 import com.restaurante.domain.Totales;
 import com.restaurante.infrastructure.in.web.dto.RespuestasDto.LineaCocinaDto;
 import com.restaurante.infrastructure.in.web.dto.RespuestasDto.LineaDto;
 import com.restaurante.infrastructure.in.web.dto.RespuestasDto.ModificadorDto;
 import com.restaurante.infrastructure.in.web.dto.RespuestasDto.OrdenDto;
 import com.restaurante.infrastructure.in.web.dto.RespuestasDto.PagoDto;
-import com.restaurante.infrastructure.in.web.dto.RespuestasDto.PlatoDto;
 import com.restaurante.infrastructure.in.web.dto.RespuestasDto.TotalesDto;
+import com.restaurante.infrastructure.in.web.http.Formato;
 
-/** Convierte objetos del dominio en los DTO del contrato de la API. */
+/**
+ * Convierte objetos del dominio en los DTO del contrato de la API.
+ * Los platos y modificadores del catálogo los mapea el servicio de Menú (MenuDto).
+ */
 public final class MapeadorDto {
-    private static final DateTimeFormatter FECHA = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
 
     private MapeadorDto() {
-    }
-
-    public static PlatoDto aDto(Plato plato) {
-        return new PlatoDto(plato.id(), plato.nombre(), dinero(plato.precioBase()), tasa(plato.tasaImpuesto()));
-    }
-
-    public static ModificadorDto aDto(Modificador modificador) {
-        return new ModificadorDto(modificador.id(), modificador.nombre(), nombre(modificador.tipo()),
-                dinero(modificador.costoExtra()));
     }
 
     /** Un modificador dentro de una línea lleva el costo extra con el que se aplicó, no el del catálogo. */
@@ -80,27 +70,21 @@ public final class MapeadorDto {
         return ordenes.stream().map(MapeadorDto::aDto).toList();
     }
 
-    // ---------------------------------------------------------------- formatos
+    // ---------------------------------------------------------------- formatos (ver Formato en comun)
 
-    /** Montos siempre con 2 decimales: "85.00". */
     static String dinero(BigDecimal valor) {
-        return valor == null ? null : valor.setScale(2, RoundingMode.HALF_UP).toPlainString();
+        return Formato.dinero(valor);
     }
 
-    /** Tasas como fracción sin ceros sobrantes: "0.16", "0". */
     static String tasa(BigDecimal valor) {
-        if (valor == null) {
-            return null;
-        }
-        return valor.signum() == 0 ? "0" : valor.stripTrailingZeros().toPlainString();
+        return Formato.tasa(valor);
     }
 
-    /** ISO local sin zona y siempre con segundos: "2026-10-20T13:45:00". */
     static String fecha(LocalDateTime valor) {
-        return valor == null ? null : valor.format(FECHA);
+        return Formato.fecha(valor);
     }
 
     private static String nombre(Enum<?> valor) {
-        return valor == null ? null : valor.name();
+        return Formato.nombre(valor);
     }
 }

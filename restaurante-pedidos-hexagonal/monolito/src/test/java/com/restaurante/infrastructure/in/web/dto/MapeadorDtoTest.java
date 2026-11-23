@@ -36,11 +36,6 @@ class MapeadorDtoTest {
     }
 
     @Test
-    void mapeaUnPlato() {
-        assertEquals(new RespuestasDto.PlatoDto("P1", "Tacos", "85.00", "0.16"), MapeadorDto.aDto(TACOS));
-    }
-
-    @Test
     void mapeaLaLineaConElCostoAplicadoYSiEsEditable() {
         Orden orden = Orden.abrir(TipoOrden.SALA, "Mesa 1");
         Modificador queso = new Modificador("M1", "Queso", TipoModificador.EXTRA, new BigDecimal("10"));

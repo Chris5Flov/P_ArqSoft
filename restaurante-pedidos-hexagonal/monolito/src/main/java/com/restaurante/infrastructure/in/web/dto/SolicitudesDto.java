@@ -11,14 +11,6 @@ public final class SolicitudesDto {
     private SolicitudesDto() {
     }
 
-    public record RegistrarPlatoRequest(String id, String nombre, String precioBase, String tasaImpuesto) { }
-
-    public record ActualizarPlatoRequest(String nombre, String precioBase, String tasaImpuesto) { }
-
-    public record RegistrarModificadorRequest(String id, String nombre, String tipo, String costoExtra) { }
-
-    public record ActualizarModificadorRequest(String nombre, String tipo, String costoExtra) { }
-
     public record AbrirOrdenRequest(String tipo, String referencia) { }
 
     public record AgregarLineaRequest(String platoId, Integer cantidad, List<String> modificadorIds) { }

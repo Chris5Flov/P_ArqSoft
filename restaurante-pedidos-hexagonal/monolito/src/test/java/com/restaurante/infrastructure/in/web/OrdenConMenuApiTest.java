@@ -16,8 +16,11 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-/** PUT y DELETE de /api/platos/{platoId} y /api/modificadores/{modificadorId} con el servidor real. */
-class MenuEdicionApiTest {
+/**
+ * Escenario que cruza Menú y Órdenes: una orden conserva sus líneas aunque después se
+ * elimine el plato del menú. Vive en el monolito porque ahí siguen juntos los dos (Paso 2).
+ */
+class OrdenConMenuApiTest {
 
     private ServidorWeb servidor;
     private HttpClient cliente;
@@ -60,48 +63,6 @@ class MenuEdicionApiTest {
     }
 
     @Test
-    void editaUnPlato() throws Exception {
-        HttpResponse<String> respuesta = pedir("PUT", "/api/platos/P1",
-                "{\"nombre\":\"Tacos de suadero\",\"precioBase\":\"90.50\",\"tasaImpuesto\":\"0.08\"}");
-
-        assertEquals(200, respuesta.statusCode());
-        JsonObject plato = objeto(respuesta);
-        assertEquals("P1", plato.get("id").getAsString());
-        assertEquals("Tacos de suadero", plato.get("nombre").getAsString());
-        assertEquals("90.50", plato.get("precioBase").getAsString());
-        assertEquals("Tacos de suadero", listar("/api/platos").get(0).getAsJsonObject().get("nombre").getAsString());
-    }
-
-    @Test
-    void editarUnPlatoConDatosInvalidosResponde400SinCambiarlo() throws Exception {
-        HttpResponse<String> respuesta = pedir("PUT", "/api/platos/P1",
-                "{\"nombre\":\"Tacos\",\"precioBase\":\"-5\",\"tasaImpuesto\":\"0.16\"}");
-
-        assertEquals(400, respuesta.statusCode());
-        assertEquals("El precio debe ser mayor a cero", objeto(respuesta).get("error").getAsString());
-        assertEquals("85.00", listar("/api/platos").get(0).getAsJsonObject().get("precioBase").getAsString());
-    }
-
-    @Test
-    void editarOEliminarUnPlatoQueNoExisteResponde400() throws Exception {
-        HttpResponse<String> editar = pedir("PUT", "/api/platos/P9",
-                "{\"nombre\":\"Pozole\",\"precioBase\":\"120\",\"tasaImpuesto\":\"0.16\"}");
-        HttpResponse<String> eliminar = pedir("DELETE", "/api/platos/P9", null);
-
-        assertEquals(400, editar.statusCode());
-        assertEquals("No existe el plato P9", objeto(editar).get("error").getAsString());
-        assertEquals(400, eliminar.statusCode());
-    }
-
-    @Test
-    void eliminaUnPlatoResponde204() throws Exception {
-        HttpResponse<String> respuesta = pedir("DELETE", "/api/platos/P1", null);
-
-        assertEquals(204, respuesta.statusCode());
-        assertEquals(0, listar("/api/platos").size());
-    }
-
-    @Test
     void unaOrdenConservaSusLineasAunqueSeElimineElPlato() throws Exception {
         String ordenId = objeto(pedir("POST", "/api/ordenes", "{\"tipo\":\"SALA\",\"referencia\":\"Mesa 1\"}"))
                 .get("id").getAsString();
@@ -120,22 +81,5 @@ class MenuEdicionApiTest {
                 "{\"platoId\":\"P1\",\"cantidad\":1,\"modificadorIds\":[]}");
         assertEquals(400, nuevaLinea.statusCode());
         assertEquals("No existe el plato P1", objeto(nuevaLinea).get("error").getAsString());
-    }
-
-    @Test
-    void editaYEliminaUnModificador() throws Exception {
-        HttpResponse<String> editar = pedir("PUT", "/api/modificadores/M1",
-                "{\"nombre\":\"Sin queso\",\"tipo\":\"EXCLUSION\",\"costoExtra\":\"0\"}");
-
-        assertEquals(200, editar.statusCode());
-        assertEquals("EXCLUSION", objeto(editar).get("tipo").getAsString());
-
-        HttpResponse<String> invalido = pedir("PUT", "/api/modificadores/M1",
-                "{\"nombre\":\"Sin queso\",\"tipo\":\"EXCLUSION\",\"costoExtra\":\"5\"}");
-        assertEquals(400, invalido.statusCode());
-        assertEquals("Una exclusión no puede tener costo extra", objeto(invalido).get("error").getAsString());
-
-        assertEquals(204, pedir("DELETE", "/api/modificadores/M1", null).statusCode());
-        assertTrue(listar("/api/modificadores").isEmpty());
     }
 }

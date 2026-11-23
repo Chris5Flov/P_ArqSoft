@@ -4,11 +4,11 @@ import com.restaurante.application.port.in.AdministrarMenuUseCase;
 import com.restaurante.domain.Modificador;
 import com.restaurante.domain.Plato;
 import com.restaurante.domain.TipoModificador;
-import com.restaurante.infrastructure.in.web.dto.MapeadorDto;
-import com.restaurante.infrastructure.in.web.dto.SolicitudesDto.ActualizarModificadorRequest;
-import com.restaurante.infrastructure.in.web.dto.SolicitudesDto.ActualizarPlatoRequest;
-import com.restaurante.infrastructure.in.web.dto.SolicitudesDto.RegistrarModificadorRequest;
-import com.restaurante.infrastructure.in.web.dto.SolicitudesDto.RegistrarPlatoRequest;
+import com.restaurante.infrastructure.in.web.dto.MenuDto;
+import com.restaurante.infrastructure.in.web.dto.MenuDto.ActualizarModificadorRequest;
+import com.restaurante.infrastructure.in.web.dto.MenuDto.ActualizarPlatoRequest;
+import com.restaurante.infrastructure.in.web.dto.MenuDto.RegistrarModificadorRequest;
+import com.restaurante.infrastructure.in.web.dto.MenuDto.RegistrarPlatoRequest;
 import com.restaurante.infrastructure.in.web.http.Conversion;
 import com.restaurante.infrastructure.in.web.http.Enrutador;
 import com.restaurante.infrastructure.in.web.http.Peticion;
@@ -37,7 +37,7 @@ public class MenuRestController implements RestController {
     }
 
     private Respuesta listarPlatos(Peticion peticion) {
-        return Respuesta.ok(administrarMenu.listarPlatos().stream().map(MapeadorDto::aDto).toList());
+        return Respuesta.ok(administrarMenu.listarPlatos().stream().map(MenuDto::aDto).toList());
     }
 
     private Respuesta registrarPlato(Peticion peticion) {
@@ -45,7 +45,7 @@ public class MenuRestController implements RestController {
         Plato plato = new Plato(solicitud.id(), solicitud.nombre(),
                 Conversion.decimal(solicitud.precioBase(), "precioBase"),
                 Conversion.decimal(solicitud.tasaImpuesto(), "tasaImpuesto"));
-        return Respuesta.creado(MapeadorDto.aDto(administrarMenu.registrarPlato(plato)));
+        return Respuesta.creado(MenuDto.aDto(administrarMenu.registrarPlato(plato)));
     }
 
     private Respuesta actualizarPlato(Peticion peticion) {
@@ -53,7 +53,7 @@ public class MenuRestController implements RestController {
         Plato plato = new Plato(peticion.parametro("platoId"), solicitud.nombre(),
                 Conversion.decimal(solicitud.precioBase(), "precioBase"),
                 Conversion.decimal(solicitud.tasaImpuesto(), "tasaImpuesto"));
-        return Respuesta.ok(MapeadorDto.aDto(administrarMenu.actualizarPlato(plato)));
+        return Respuesta.ok(MenuDto.aDto(administrarMenu.actualizarPlato(plato)));
     }
 
     private Respuesta eliminarPlato(Peticion peticion) {
@@ -62,7 +62,7 @@ public class MenuRestController implements RestController {
     }
 
     private Respuesta listarModificadores(Peticion peticion) {
-        return Respuesta.ok(administrarMenu.listarModificadores().stream().map(MapeadorDto::aDto).toList());
+        return Respuesta.ok(administrarMenu.listarModificadores().stream().map(MenuDto::aDto).toList());
     }
 
     private Respuesta registrarModificador(Peticion peticion) {
@@ -70,7 +70,7 @@ public class MenuRestController implements RestController {
         Modificador modificador = new Modificador(solicitud.id(), solicitud.nombre(),
                 Conversion.enumeracion(TipoModificador.class, solicitud.tipo(), "tipo"),
                 Conversion.decimal(solicitud.costoExtra(), "costoExtra"));
-        return Respuesta.creado(MapeadorDto.aDto(administrarMenu.registrarModificador(modificador)));
+        return Respuesta.creado(MenuDto.aDto(administrarMenu.registrarModificador(modificador)));
     }
 
     private Respuesta actualizarModificador(Peticion peticion) {
@@ -78,7 +78,7 @@ public class MenuRestController implements RestController {
         Modificador modificador = new Modificador(peticion.parametro("modificadorId"), solicitud.nombre(),
                 Conversion.enumeracion(TipoModificador.class, solicitud.tipo(), "tipo"),
                 Conversion.decimal(solicitud.costoExtra(), "costoExtra"));
-        return Respuesta.ok(MapeadorDto.aDto(administrarMenu.actualizarModificador(modificador)));
+        return Respuesta.ok(MenuDto.aDto(administrarMenu.actualizarModificador(modificador)));
     }
 
     private Respuesta eliminarModificador(Peticion peticion) {

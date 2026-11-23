@@ -25,6 +25,12 @@
       <groupId>com.restaurante</groupId>
       <artifactId>comun</artifactId>
     </dependency>
+    <!-- Temporal (Paso 2): Órdenes todavía busca platos en los repositorios del Menú dentro del
+         mismo proceso. En el Paso 3 se cambia por el puerto CatalogoMenu (REST) y se quita. -->
+    <dependency>
+      <groupId>com.restaurante</groupId>
+      <artifactId>servicio-menu</artifactId>
+    </dependency>
     <dependency>
       <groupId>com.google.code.gson</groupId>
       <artifactId>gson</artifactId>

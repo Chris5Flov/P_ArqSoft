@@ -12,6 +12,7 @@
 
   <modules>
     <module>comun</module>
+    <module>servicio-menu</module>
     <module>monolito</module>
   </modules>
 
@@ -28,6 +29,11 @@
       <dependency>
         <groupId>com.restaurante</groupId>
         <artifactId>comun</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.restaurante</groupId>
+        <artifactId>servicio-menu</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
