@@ -12,6 +12,7 @@
 
   <modules>
     <module>comun</module>
+    <module>bus-eventos</module>
     <module>servicio-menu</module>
     <module>monolito</module>
     <module>gateway</module>
