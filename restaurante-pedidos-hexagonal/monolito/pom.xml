@@ -12,12 +12,12 @@
 
   <artifactId>monolito</artifactId>
   <packaging>jar</packaging>
-  <name>Módulo Monolito</name>
+  <name>Servicio de Órdenes, con Cocina y Caja (puerto 8082)</name>
 
   <properties>
     <!-- Clase que arranca "mvn compile exec:java". Para la consola:
          mvn compile exec:java -Dexec.mainClass=com.restaurante.infrastructure.in.cli.Main -->
-    <exec.mainClass>com.restaurante.infrastructure.in.web.MainWeb</exec.mainClass>
+    <exec.mainClass>com.restaurante.infrastructure.in.web.MainOrdenes</exec.mainClass>
   </properties>
 
   <dependencies>

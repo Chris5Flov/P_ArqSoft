@@ -295,15 +295,4 @@ class ApiRestTest {
         assertFalse(r.error().isBlank());
         assertEquals(404, pedir("PATCH", "/api/platos", "{}").estado());
     }
-
-    @Test
-    void laRaizEntregaUnaPaginaHtml() throws Exception {
-        HttpResponse<String> r = cliente.send(HttpRequest.newBuilder(URI.create(servicios.url("/"))).build(),
-                HttpResponse.BodyHandlers.ofString());
-
-        assertEquals(200, r.statusCode());
-        assertTrue(r.headers().firstValue("Content-Type").orElse("").startsWith("text/html"));
-        assertEquals(404, get("/no-existe.js").estado());
-        assertEquals(404, get("/../pom.xml").estado());
-    }
 }

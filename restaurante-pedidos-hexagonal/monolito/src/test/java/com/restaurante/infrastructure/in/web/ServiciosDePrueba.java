@@ -13,7 +13,7 @@ import java.util.List;
 final class ServiciosDePrueba {
 
     private final ServidorApi menu;
-    private final ServidorWeb ordenes;
+    private final ServidorApi ordenes;
     private final String baseMenu;
     private final String baseOrdenes;
 
@@ -22,7 +22,7 @@ final class ServiciosDePrueba {
         menu.iniciar();
         baseMenu = "http://localhost:" + menu.getPuerto();
 
-        ordenes = new ServidorWeb(Aplicacion.crear(baseMenu), 0);
+        ordenes = MainOrdenes.crearServidor(Aplicacion.crear(baseMenu), 0);
         ordenes.iniciar();
         baseOrdenes = "http://localhost:" + ordenes.getPuerto();
     }

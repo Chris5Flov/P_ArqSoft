@@ -1,4 +1,4 @@
-package com.restaurante.infrastructure.in.web;
+package com.restaurante.gateway;
 
 import java.io.IOException;
 import java.io.InputStream;
