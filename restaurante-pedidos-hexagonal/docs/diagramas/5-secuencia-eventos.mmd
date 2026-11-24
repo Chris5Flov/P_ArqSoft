@@ -1,0 +1,52 @@
+sequenceDiagram
+    autonumber
+    actor Mesero
+    actor Cocinero
+    actor Cajero
+    participant GW as Gateway :8080
+    participant ORD as Órdenes :8082
+    participant MEN as Menú :8081
+    participant BUS as Bus de eventos :8090
+    participant COC as Cocina :8083
+    participant CAJ as Caja :8084
+
+    Mesero->>GW: POST /api/ordenes {tipo, referencia}
+    GW->>ORD: reenvía
+    ORD-->>Mesero: 201 OrdenDto (ABIERTA)
+    ORD-)BUS: OrdenCreada
+    BUS-)CAJ: OrdenCreada (crea su copia de la orden)
+
+    Mesero->>GW: POST /api/ordenes/{id}/lineas
+    GW->>ORD: reenvía
+    ORD->>MEN: GET /api/platos y /api/modificadores
+    MEN-->>ORD: precio, tasa y costo de los modificadores
+    ORD-->>Mesero: 200 OrdenDto (línea PENDIENTE)
+    ORD-)BUS: LineaCreada (con los precios congelados)
+    BUS-)COC: LineaCreada (aparece en pendientes)
+    BUS-)CAJ: LineaCreada (la agrega a su copia)
+
+    Note over ORD,CAJ: LineaModificada, LineaCancelada y OrdenCancelada siguen el mismo camino hacia Cocina y Caja
+
+    Cocinero->>GW: POST /api/cocina/ordenes/{id}/lineas/{lineaId}/iniciar
+    GW->>COC: reenvía
+    COC-)BUS: LineaIniciada
+    BUS-)ORD: LineaIniciada (la línea ya no se puede editar)
+    Cocinero->>GW: POST .../lista
+    GW->>COC: reenvía
+    COC-)BUS: LineaLista
+    BUS-)ORD: LineaLista (la orden pasa a la lista de Caja)
+
+    Cajero->>GW: GET /api/caja/ordenes/{id}/totales?descuento&propina
+    GW->>CAJ: reenvía
+    CAJ-->>Cajero: TotalesDto (calculados con su copia)
+    Cajero->>GW: POST /api/caja/ordenes/{id}/cobrar {metodo}
+    GW->>CAJ: reenvía
+    CAJ->>CAJ: ProcesadorPago.cobrar(total)
+    alt pago aprobado
+        CAJ-->>Cajero: PagoDto APROBADO (su copia queda CERRADA)
+        CAJ-)BUS: OrdenCobrada
+        BUS-)ORD: OrdenCobrada (registra el pago y cierra la orden)
+        BUS-)COC: OrdenCobrada (retira las líneas de la orden)
+    else pago rechazado
+        CAJ-->>Cajero: PagoDto RECHAZADO (solo queda en Caja, se puede reintentar)
+    end
