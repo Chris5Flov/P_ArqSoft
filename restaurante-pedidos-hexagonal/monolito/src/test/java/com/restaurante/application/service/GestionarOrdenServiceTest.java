@@ -16,6 +16,12 @@ import com.restaurante.domain.Plato;
 import com.restaurante.domain.ReglaDeNegocioException;
 import com.restaurante.domain.TipoModificador;
 import com.restaurante.domain.TipoOrden;
+import com.restaurante.eventos.DatosEventos.LineaDeOrden;
+import com.restaurante.eventos.DatosEventos.LineaDeOrdenId;
+import com.restaurante.eventos.DatosEventos.OrdenId;
+import com.restaurante.eventos.Evento;
+import com.restaurante.eventos.PublicadorEventosEnMemoria;
+import com.restaurante.eventos.TiposEvento;
 import com.restaurante.infrastructure.persistence.OrdenRepositoryMemoria;
 import java.math.BigDecimal;
 import java.util.List;
@@ -26,6 +32,7 @@ class GestionarOrdenServiceTest {
 
     private OrdenRepositoryMemoria ordenes;
     private GestionarOrdenService servicio;
+    private PublicadorEventosEnMemoria bus;
     private Plato tacos;
     private Modificador queso;
     private Orden orden;
@@ -35,7 +42,8 @@ class GestionarOrdenServiceTest {
         ordenes = new OrdenRepositoryMemoria();
         tacos = new Plato("P1", "Tacos", new BigDecimal("85"), new BigDecimal("0.16"));
         queso = new Modificador("M1", "Queso", TipoModificador.EXTRA, BigDecimal.TEN);
-        servicio = new GestionarOrdenService(ordenes, new CatalogoMenuFalso().con(tacos).con(queso));
+        bus = new PublicadorEventosEnMemoria();
+        servicio = new GestionarOrdenService(ordenes, new CatalogoMenuFalso().con(tacos).con(queso), bus);
         orden = servicio.abrir(TipoOrden.SALA, "Mesa 5");
     }
 
@@ -195,5 +203,68 @@ class GestionarOrdenServiceTest {
 
         assertEquals(List.of(orden, otra), servicio.listarAbiertas());
         assertEquals(List.of(orden, otra, cerrada), servicio.listar());
+    }
+
+    // ---------------------------------------------------------------- eventos (Paso 6)
+
+    private List<String> tiposPublicados() {
+        return bus.publicados().stream().map(Evento::tipo).toList();
+    }
+
+    @Test
+    void publicaLineaCreadaConLaLineaCompletaYSuPrecio() {
+        LineaPedido linea = servicio.agregarLinea(orden.getId(), "P1", 2, List.of("M1")).getLineas().get(0);
+
+        LineaDeOrden datos = bus.publicados(TiposEvento.LINEA_CREADA).get(0).datosComo(LineaDeOrden.class);
+        assertEquals(orden.getId(), datos.ordenId());
+        assertEquals(linea.getId(), datos.lineaId());
+        assertEquals("Mesa 5", datos.referenciaOrden());
+        assertEquals("Tacos", datos.platoNombre());
+        assertEquals(2, datos.cantidad());
+        assertEquals("85.00", datos.precioUnitario());
+        assertEquals("0.16", datos.tasaImpuesto());
+        assertEquals("10.00", datos.modificadores().get(0).costoExtra());
+    }
+
+    @Test
+    void publicaCadaCambioDeLasLineasYLaCancelacionDeLaOrden() {
+        String lineaId = servicio.agregarLinea(orden.getId(), "P1", 1, List.of()).getLineas().get(0).getId();
+        servicio.modificarLinea(orden.getId(), lineaId, 3, List.of());
+        servicio.cancelarLinea(orden.getId(), lineaId);
+        servicio.cancelarOrden(orden.getId());
+
+        assertEquals(List.of(TiposEvento.LINEA_CREADA, TiposEvento.LINEA_MODIFICADA,
+                TiposEvento.LINEA_CANCELADA, TiposEvento.ORDEN_CANCELADA), tiposPublicados());
+        assertEquals(3, bus.publicados(TiposEvento.LINEA_MODIFICADA).get(0).datosComo(LineaDeOrden.class).cantidad());
+        assertEquals(new LineaDeOrdenId(orden.getId(), lineaId),
+                bus.publicados(TiposEvento.LINEA_CANCELADA).get(0).datosComo(LineaDeOrdenId.class));
+        assertEquals(new OrdenId(orden.getId()),
+                bus.publicados(TiposEvento.ORDEN_CANCELADA).get(0).datosComo(OrdenId.class));
+    }
+
+    @Test
+    void siLaReglaFallaNoPublicaNada() {
+        assertThrows(ReglaDeNegocioException.class, () -> servicio.agregarLinea(orden.getId(), "P1", 0, List.of()));
+        assertTrue(bus.publicados().isEmpty());
+    }
+
+    @Test
+    void elAvisoDeCocinaBloqueaLaEdicionDeLaLinea() {
+        String lineaId = servicio.agregarLinea(orden.getId(), "P1", 1, List.of()).getLineas().get(0).getId();
+
+        servicio.lineaIniciada(orden.getId(), lineaId);
+
+        assertEquals(EstadoCocina.EN_COCCION, orden.getLineas().get(0).getEstadoCocina());
+        assertThrows(ReglaDeNegocioException.class, () -> servicio.modificarLinea(orden.getId(), lineaId, 2, List.of()));
+
+        servicio.lineaLista(orden.getId(), lineaId);
+        assertEquals(EstadoCocina.LISTO, orden.getLineas().get(0).getEstadoCocina());
+    }
+
+    @Test
+    void unAvisoDeCocinaQueYaNoAplicaSeIgnora() {
+        servicio.lineaIniciada("no-existe", "L1");
+        servicio.lineaLista(orden.getId(), "no-existe");
+        assertEquals(EstadoOrden.ABIERTA, orden.getEstado());
     }
 }

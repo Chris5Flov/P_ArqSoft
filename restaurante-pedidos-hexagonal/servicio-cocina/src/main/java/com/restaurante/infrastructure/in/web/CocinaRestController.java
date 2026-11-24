@@ -1,7 +1,7 @@
 package com.restaurante.infrastructure.in.web;
 
 import com.restaurante.application.port.in.GestionarCocinaUseCase;
-import com.restaurante.infrastructure.in.web.dto.MapeadorDto;
+import com.restaurante.infrastructure.in.web.dto.CocinaDto;
 import com.restaurante.infrastructure.in.web.http.Enrutador;
 import com.restaurante.infrastructure.in.web.http.Peticion;
 import com.restaurante.infrastructure.in.web.http.Respuesta;
@@ -24,7 +24,7 @@ public class CocinaRestController implements RestController {
     }
 
     private Respuesta listarPendientes(Peticion peticion) {
-        return Respuesta.ok(gestionarCocina.listarPendientes().stream().map(MapeadorDto::aDto).toList());
+        return Respuesta.ok(gestionarCocina.listarPendientes().stream().map(CocinaDto::aDto).toList());
     }
 
     private Respuesta iniciarCoccion(Peticion peticion) {

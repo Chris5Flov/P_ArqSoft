@@ -4,14 +4,12 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import com.restaurante.application.port.in.GestionarCocinaUseCase.LineaEnCocina;
 import com.restaurante.domain.LineaPedido;
 import com.restaurante.domain.Modificador;
 import com.restaurante.domain.ModificadorAplicado;
 import com.restaurante.domain.Orden;
 import com.restaurante.domain.Pago;
 import com.restaurante.domain.Totales;
-import com.restaurante.infrastructure.in.web.dto.RespuestasDto.LineaCocinaDto;
 import com.restaurante.infrastructure.in.web.dto.RespuestasDto.LineaDto;
 import com.restaurante.infrastructure.in.web.dto.RespuestasDto.ModificadorDto;
 import com.restaurante.infrastructure.in.web.dto.RespuestasDto.OrdenDto;
@@ -59,11 +57,6 @@ public final class MapeadorDto {
                 orden.getLineas().stream().map(MapeadorDto::aDto).toList(),
                 aDto(totales),
                 orden.getPagos().stream().map(MapeadorDto::aDto).toList());
-    }
-
-    public static LineaCocinaDto aDto(LineaEnCocina linea) {
-        return new LineaCocinaDto(linea.ordenId(), linea.lineaId(), linea.referenciaOrden(), linea.plato(),
-                linea.cantidad(), List.copyOf(linea.modificadores()), nombre(linea.estado()));
     }
 
     public static List<OrdenDto> ordenes(List<Orden> ordenes) {

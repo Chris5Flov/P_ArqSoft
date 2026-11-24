@@ -3,6 +3,8 @@ package com.restaurante.infrastructure.in.cli;
 import java.util.Arrays;
 import java.util.Scanner;
 
+import com.restaurante.eventos.PublicadorEventosEnMemoria;
+import com.restaurante.infrastructure.client.MenuRestClient;
 import com.restaurante.infrastructure.config.Aplicacion;
 import com.restaurante.infrastructure.config.DatosDemo;
 
@@ -14,13 +16,15 @@ import com.restaurante.infrastructure.config.DatosDemo;
  */
 public class Main {
     public static void main(String[] args) {
-        Aplicacion app = Aplicacion.crear(Aplicacion.urlMenu(args));
+        // La consola es una demostración independiente: guarda sus órdenes en su propia memoria y
+        // no publica en el bus real (no se mezclan con las de la página web).
+        Aplicacion app = Aplicacion.crear(new MenuRestClient(Aplicacion.urlMenu(args)), new PublicadorEventosEnMemoria());
         if (Arrays.asList(args).contains("--demo")) {
             DatosDemo.cargar(app);
         }
 
         try (Scanner scanner = new Scanner(System.in)) {
-            new MenuConsola(app.gestionarOrden(), app.gestionarCocina(), app.cobrarOrden(),
+            new MenuConsola(app.gestionarOrden(), app.cobrarOrden(),
                     scanner, System.out).iniciar();
         }
     }

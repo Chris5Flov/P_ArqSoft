@@ -7,7 +7,7 @@ import com.restaurante.domain.EstadoCocina;
 /** RF3: la cocina consulta qué falta preparar y avanza el estado de cada línea. */
 public interface GestionarCocinaUseCase {
 
-    /** Líneas de órdenes abiertas que aún no están LISTO ni CANCELADA (PENDIENTE o EN_COCCION). */
+    /** Líneas que la cocina aún tiene que atender (PENDIENTE o EN_COCCION), en el orden en que llegaron. */
     List<LineaEnCocina> listarPendientes();
 
     /** PENDIENTE -> EN_COCCION. */

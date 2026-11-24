@@ -9,8 +9,6 @@ import java.util.Scanner;
 import java.util.stream.Collectors;
 
 import com.restaurante.application.port.in.CobrarOrdenUseCase;
-import com.restaurante.application.port.in.GestionarCocinaUseCase;
-import com.restaurante.application.port.in.GestionarCocinaUseCase.LineaEnCocina;
 import com.restaurante.application.port.in.GestionarOrdenUseCase;
 import com.restaurante.domain.LineaPedido;
 import com.restaurante.domain.MetodoPago;
@@ -34,18 +32,15 @@ import com.restaurante.infrastructure.in.web.http.ServicioNoDisponibleException;
 public class MenuConsola {
 
     private final GestionarOrdenUseCase gestionarOrden;
-    private final GestionarCocinaUseCase gestionarCocina;
     private final CobrarOrdenUseCase cobrarOrden;
     private final Scanner entrada;
     private final PrintStream salida;
 
     public MenuConsola(GestionarOrdenUseCase gestionarOrden,
-                       GestionarCocinaUseCase gestionarCocina,
                        CobrarOrdenUseCase cobrarOrden,
                        Scanner entrada,
                        PrintStream salida) {
         this.gestionarOrden = gestionarOrden;
-        this.gestionarCocina = gestionarCocina;
         this.cobrarOrden = cobrarOrden;
         this.entrada = entrada;
         this.salida = salida;
@@ -83,7 +78,7 @@ public class MenuConsola {
         salida.println("   8. Cancelar una orden completa");
         salida.println("   9. Ver el detalle de una orden");
         salida.println(" Cocinero");
-        salida.println("  10. Ver pedidos pendientes y actualizar su estado");
+        salida.println("  10. Ver pedidos pendientes y actualizar su estado  (se hace en el servicio de Cocina)");
         salida.println(" Cajero");
         salida.println("  11. Consultar los totales de una orden");
         salida.println("  12. Cerrar una orden y pagar");
@@ -104,7 +99,7 @@ public class MenuConsola {
                 case "7" -> cancelarLineaDeOrden();
                 case "8" -> cancelarOrdenCompleta();
                 case "9" -> verDetalleDeOrden();
-                case "10" -> gestionarCocina();
+                case "10" -> cocinaEnSuServicio();
                 case "11" -> consultarTotales();
                 case "12" -> cobrarYCerrarOrden();
                 case "0" -> {
@@ -316,55 +311,12 @@ public class MenuConsola {
 
     // ================================================================ COCINERO
 
-    private void gestionarCocina() {
-        while (true) {
-            List<LineaEnCocina> pendientes = gestionarCocina.listarPendientes();
-            salida.println();
-            salida.println("-- Pedidos pendientes en cocina --");
-            if (pendientes.isEmpty()) {
-                salida.println("No hay líneas pendientes.");
-                return;
-            }
-            salida.printf("%-3s %-14s %-22s %-5s %-11s %s%n", "#", "ORDEN", "PLATO", "CANT", "ESTADO", "MODIFICADORES");
-            for (int i = 0; i < pendientes.size(); i++) {
-                LineaEnCocina l = pendientes.get(i);
-                salida.printf("%-3d %-14s %-22s %-5d %-11s %s%n",
-                        i + 1, l.referenciaOrden(), l.plato(), l.cantidad(), l.estado(),
-                        l.modificadores().isEmpty() ? "-" : String.join(", ", l.modificadores()));
-            }
-            salida.println();
-            salida.println("1. Iniciar cocción");
-            salida.println("2. Marcar como lista");
-            salida.println("3. Volver al menú principal");
-            String opcion = leerLinea("Elige una opción: ");
-            if (opcion.equals("3")) {
-                return;
-            }
-            if (!opcion.equals("1") && !opcion.equals("2")) {
-                salida.println("Opción no válida. Escribe 1, 2 o 3.");
-                continue;
-            }
-            Integer numero = leerEntero("Número de la línea: ");
-            if (numero == null) {
-                continue;
-            }
-            if (numero < 1 || numero > pendientes.size()) {
-                salida.println("Número de línea no válido.");
-                continue;
-            }
-            LineaEnCocina elegida = pendientes.get(numero - 1);
-            try {
-                if (opcion.equals("1")) {
-                    gestionarCocina.iniciarCoccion(elegida.ordenId(), elegida.lineaId());
-                    salida.println("Cocción iniciada: " + elegida.plato() + " (" + elegida.referenciaOrden() + ").");
-                } else {
-                    gestionarCocina.marcarLista(elegida.ordenId(), elegida.lineaId());
-                    salida.println("Línea lista: " + elegida.plato() + " (" + elegida.referenciaOrden() + ").");
-                }
-            } catch (ReglaDeNegocioException e) {
-                salida.println("No se pudo completar la operación: " + e.getMessage());
-            }
-        }
+    /** La cocina ya es su propio servicio (puerto 8083); se atiende desde la pestaña Cocina. */
+    private void cocinaEnSuServicio() {
+        salida.println();
+        salida.println("Los pedidos se preparan en el servicio de Cocina:");
+        salida.println("  - en la página web, pestaña Cocina, o");
+        salida.println("  - con su API: GET /api/cocina/pendientes (puerto 8083).");
     }
 
     // ================================================================ CAJERO

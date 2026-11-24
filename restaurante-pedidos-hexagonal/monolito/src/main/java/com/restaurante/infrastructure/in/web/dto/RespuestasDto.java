@@ -25,7 +25,4 @@ public final class RespuestasDto {
 
     public record OrdenDto(String id, String tipo, String referencia, String estado, String fechaCreacion,
                            List<LineaDto> lineas, TotalesDto totales, List<PagoDto> pagos) { }
-
-    public record LineaCocinaDto(String ordenId, String lineaId, String referenciaOrden, String plato,
-                                 int cantidad, List<String> modificadores, String estado) { }
 }

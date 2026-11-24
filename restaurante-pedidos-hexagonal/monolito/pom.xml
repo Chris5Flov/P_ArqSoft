@@ -25,11 +25,16 @@
       <groupId>com.restaurante</groupId>
       <artifactId>comun</artifactId>
     </dependency>
-    <!-- Solo para pruebas: las pruebas de la API levantan el servicio de Menú real para que
-         Órdenes lo consulte por REST. El código de Órdenes no depende de este módulo. -->
+    <!-- Solo para pruebas: las pruebas de la API levantan los servicios de Menú y Cocina reales.
+         El código de Órdenes no depende de estos módulos. -->
     <dependency>
       <groupId>com.restaurante</groupId>
       <artifactId>servicio-menu</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.restaurante</groupId>
+      <artifactId>servicio-cocina</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

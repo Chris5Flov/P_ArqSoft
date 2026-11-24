@@ -7,8 +7,9 @@ package com.restaurante.eventos;
  * Evento          Lo publica   Le interesa a
  * OrdenCreada     Órdenes      Caja
  * LineaCreada     Órdenes      Cocina, Caja
+ * LineaModificada Órdenes      Cocina, Caja
  * LineaCancelada  Órdenes      Cocina, Caja
- * OrdenCancelada  Órdenes      Caja
+ * OrdenCancelada  Órdenes      Cocina, Caja
  * LineaIniciada   Cocina       Órdenes
  * LineaLista      Cocina       Órdenes
  * OrdenCobrada    Caja         Órdenes
@@ -18,6 +19,7 @@ public final class TiposEvento {
 
     public static final String ORDEN_CREADA = "OrdenCreada";
     public static final String LINEA_CREADA = "LineaCreada";
+    public static final String LINEA_MODIFICADA = "LineaModificada";
     public static final String LINEA_CANCELADA = "LineaCancelada";
     public static final String ORDEN_CANCELADA = "OrdenCancelada";
     public static final String LINEA_INICIADA = "LineaIniciada";
