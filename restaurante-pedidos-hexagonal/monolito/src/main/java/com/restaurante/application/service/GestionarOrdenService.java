@@ -1,9 +1,8 @@
 package com.restaurante.application.service;
 
 import com.restaurante.application.port.in.GestionarOrdenUseCase;
-import com.restaurante.application.port.out.ModificadorRepository;
+import com.restaurante.application.port.out.CatalogoMenu;
 import com.restaurante.application.port.out.OrdenRepository;
-import com.restaurante.application.port.out.PlatoRepository;
 import com.restaurante.domain.EstadoOrden;
 import com.restaurante.domain.Modificador;
 import com.restaurante.domain.Orden;
@@ -13,17 +12,17 @@ import com.restaurante.domain.TipoOrden;
 import java.util.Comparator;
 import java.util.List;
 
-/** RF2 y RF3. Las reglas (orden abierta, línea PENDIENTE, cantidad...) viven en {@link Orden}. */
+/**
+ * RF2 y RF3. Las reglas (orden abierta, línea PENDIENTE, cantidad...) viven en {@link Orden}.
+ * Los platos y modificadores se consultan al servicio de Menú por el puerto {@link CatalogoMenu}.
+ */
 public class GestionarOrdenService implements GestionarOrdenUseCase {
     private final OrdenRepository ordenes;
-    private final PlatoRepository platos;
-    private final ModificadorRepository modificadores;
+    private final CatalogoMenu menu;
 
-    public GestionarOrdenService(OrdenRepository ordenes, PlatoRepository platos,
-                                 ModificadorRepository modificadores) {
+    public GestionarOrdenService(OrdenRepository ordenes, CatalogoMenu menu) {
         this.ordenes = ordenes;
-        this.platos = platos;
-        this.modificadores = modificadores;
+        this.menu = menu;
     }
 
     @Override
@@ -36,7 +35,7 @@ public class GestionarOrdenService implements GestionarOrdenUseCase {
     @Override
     public Orden agregarLinea(String ordenId, String platoId, int cantidad, List<String> modificadorIds) {
         Orden orden = buscarOrden(ordenId);
-        Plato plato = platos.buscarPorId(platoId)
+        Plato plato = menu.buscarPlato(platoId)
                 .orElseThrow(() -> new ReglaDeNegocioException("No existe el plato " + platoId));
 
         orden.agregarLinea(plato, cantidad, buscarModificadores(modificadorIds));
@@ -87,6 +86,16 @@ public class GestionarOrdenService implements GestionarOrdenUseCase {
                 .toList();
     }
 
+    @Override
+    public List<Plato> consultarPlatos() {
+        return menu.listarPlatos();
+    }
+
+    @Override
+    public List<Modificador> consultarModificadores() {
+        return menu.listarModificadores();
+    }
+
     private Orden buscarOrden(String ordenId) {
         return ordenes.buscarPorId(ordenId)
                 .orElseThrow(() -> new ReglaDeNegocioException("No existe la orden " + ordenId));
@@ -97,7 +106,7 @@ public class GestionarOrdenService implements GestionarOrdenUseCase {
             return List.of();
         }
         return ids.stream()
-                .map(id -> modificadores.buscarPorId(id)
+                .map(id -> menu.buscarModificador(id)
                         .orElseThrow(() -> new ReglaDeNegocioException("No existe el modificador " + id)))
                 .toList();
     }

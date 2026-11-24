@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.restaurante.infrastructure.config.Aplicacion;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -18,20 +17,17 @@ import org.junit.jupiter.api.Test;
 
 /**
  * Escenario que cruza Menú y Órdenes: una orden conserva sus líneas aunque después se
- * elimine el plato del menú. Vive en el monolito porque ahí siguen juntos los dos (Paso 2).
+ * elimine el plato del menú. Usa los dos servicios reales: Órdenes consulta al Menú por REST.
  */
 class OrdenConMenuApiTest {
 
-    private ServidorWeb servidor;
+    private ServiciosDePrueba servicios;
     private HttpClient cliente;
-    private String base;
 
     @BeforeEach
     void setUp() throws Exception {
-        servidor = new ServidorWeb(Aplicacion.crear(), 0);
-        servidor.iniciar();
+        servicios = new ServiciosDePrueba();
         cliente = HttpClient.newHttpClient();
-        base = "http://localhost:" + servidor.getPuerto();
 
         assertEquals(201, pedir("POST", "/api/platos",
                 "{\"id\":\"P1\",\"nombre\":\"Tacos\",\"precioBase\":\"85\",\"tasaImpuesto\":\"0.16\"}").statusCode());
@@ -41,11 +37,11 @@ class OrdenConMenuApiTest {
 
     @AfterEach
     void tearDown() {
-        servidor.detener();
+        servicios.detener();
     }
 
     private HttpResponse<String> pedir(String metodo, String ruta, String json) throws IOException, InterruptedException {
-        HttpRequest.Builder peticion = HttpRequest.newBuilder(URI.create(base + ruta));
+        HttpRequest.Builder peticion = HttpRequest.newBuilder(URI.create(servicios.url(ruta)));
         if (json == null) {
             peticion.method(metodo, HttpRequest.BodyPublishers.noBody());
         } else {

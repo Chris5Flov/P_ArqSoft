@@ -14,6 +14,7 @@ import com.sun.net.httpserver.HttpServer;
 /**
  * Adaptador de entrada web: un servidor HTTP del JDK que expone la API REST en /api
  * y sirve la interfaz web (src/main/resources/web/) en /.
+ * Las rutas del menú (/api/platos, /api/modificadores) ya las atiende el servicio de Menú.
  */
 public class ServidorWeb {
 
@@ -24,7 +25,6 @@ public class ServidorWeb {
     public ServidorWeb(Aplicacion app, int puerto) throws IOException {
         Enrutador enrutador = new Enrutador();
         List<RestController> controladores = List.of(
-                new MenuRestController(app.administrarMenu()),
                 new OrdenRestController(app.gestionarOrden()),
                 new CocinaRestController(app.gestionarCocina()),
                 new CajaRestController(app.cobrarOrden()));

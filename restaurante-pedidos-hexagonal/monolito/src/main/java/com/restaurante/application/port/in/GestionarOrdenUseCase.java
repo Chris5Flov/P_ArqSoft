@@ -1,6 +1,8 @@
 package com.restaurante.application.port.in;
 
+import com.restaurante.domain.Modificador;
 import com.restaurante.domain.Orden;
+import com.restaurante.domain.Plato;
 import com.restaurante.domain.TipoOrden;
 import java.util.List;
 
@@ -28,4 +30,10 @@ public interface GestionarOrdenUseCase {
     List<Orden> listar();
 
     List<Orden> listarAbiertas();
+
+    /** Platos que el mesero puede pedir. Los da el servicio de Menú. */
+    List<Plato> consultarPlatos();
+
+    /** Modificadores que el mesero puede aplicar a una línea. Los da el servicio de Menú. */
+    List<Modificador> consultarModificadores();
 }

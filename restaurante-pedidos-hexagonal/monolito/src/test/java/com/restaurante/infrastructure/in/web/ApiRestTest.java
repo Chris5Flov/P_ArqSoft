@@ -8,7 +8,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.restaurante.infrastructure.config.Aplicacion;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -18,7 +17,10 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-/** Recorre la API REST real (servidor HTTP + controladores + casos de uso) según el contrato. */
+/**
+ * Recorre la API REST real (servidor HTTP + controladores + casos de uso) según el contrato.
+ * Levanta los servicios de Menú y Órdenes; Órdenes consulta al Menú por REST.
+ */
 class ApiRestTest {
 
     private record Resultado(int estado, String cuerpo) {
@@ -35,27 +37,24 @@ class ApiRestTest {
         }
     }
 
-    private ServidorWeb servidor;
+    private ServiciosDePrueba servicios;
     private HttpClient cliente;
-    private String base;
 
     @BeforeEach
     void setUp() throws IOException {
-        servidor = new ServidorWeb(Aplicacion.crear(), 0);
-        servidor.iniciar();
+        servicios = new ServiciosDePrueba();
         cliente = HttpClient.newHttpClient();
-        base = "http://localhost:" + servidor.getPuerto();
     }
 
     @AfterEach
     void tearDown() {
-        servidor.detener();
+        servicios.detener();
     }
 
     // ---------------------------------------------------------------- utilidades
 
     private Resultado pedir(String metodo, String ruta, String json) throws Exception {
-        HttpRequest.Builder peticion = HttpRequest.newBuilder(URI.create(base + ruta));
+        HttpRequest.Builder peticion = HttpRequest.newBuilder(URI.create(servicios.url(ruta)));
         if (json == null) {
             peticion.method(metodo, HttpRequest.BodyPublishers.noBody());
         } else {
@@ -299,7 +298,7 @@ class ApiRestTest {
 
     @Test
     void laRaizEntregaUnaPaginaHtml() throws Exception {
-        HttpResponse<String> r = cliente.send(HttpRequest.newBuilder(URI.create(base + "/")).build(),
+        HttpResponse<String> r = cliente.send(HttpRequest.newBuilder(URI.create(servicios.url("/"))).build(),
                 HttpResponse.BodyHandlers.ofString());
 
         assertEquals(200, r.statusCode());

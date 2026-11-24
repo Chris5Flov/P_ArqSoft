@@ -25,11 +25,12 @@
       <groupId>com.restaurante</groupId>
       <artifactId>comun</artifactId>
     </dependency>
-    <!-- Temporal (Paso 2): Órdenes todavía busca platos en los repositorios del Menú dentro del
-         mismo proceso. En el Paso 3 se cambia por el puerto CatalogoMenu (REST) y se quita. -->
+    <!-- Solo para pruebas: las pruebas de la API levantan el servicio de Menú real para que
+         Órdenes lo consulte por REST. El código de Órdenes no depende de este módulo. -->
     <dependency>
       <groupId>com.restaurante</groupId>
       <artifactId>servicio-menu</artifactId>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>com.google.code.gson</groupId>

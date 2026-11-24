@@ -16,9 +16,7 @@ import com.restaurante.domain.Plato;
 import com.restaurante.domain.ReglaDeNegocioException;
 import com.restaurante.domain.TipoModificador;
 import com.restaurante.domain.TipoOrden;
-import com.restaurante.infrastructure.persistence.ModificadorRepositoryMemoria;
 import com.restaurante.infrastructure.persistence.OrdenRepositoryMemoria;
-import com.restaurante.infrastructure.persistence.PlatoRepositoryMemoria;
 import java.math.BigDecimal;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,14 +33,9 @@ class GestionarOrdenServiceTest {
     @BeforeEach
     void setUp() {
         ordenes = new OrdenRepositoryMemoria();
-        PlatoRepositoryMemoria platos = new PlatoRepositoryMemoria();
-        ModificadorRepositoryMemoria modificadores = new ModificadorRepositoryMemoria();
-        servicio = new GestionarOrdenService(ordenes, platos, modificadores);
-
         tacos = new Plato("P1", "Tacos", new BigDecimal("85"), new BigDecimal("0.16"));
-        platos.guardar(tacos);
         queso = new Modificador("M1", "Queso", TipoModificador.EXTRA, BigDecimal.TEN);
-        modificadores.guardar(queso);
+        servicio = new GestionarOrdenService(ordenes, new CatalogoMenuFalso().con(tacos).con(queso));
         orden = servicio.abrir(TipoOrden.SALA, "Mesa 5");
     }
 

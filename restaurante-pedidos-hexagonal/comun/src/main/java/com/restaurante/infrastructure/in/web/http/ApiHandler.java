@@ -15,7 +15,8 @@ import com.sun.net.httpserver.HttpHandler;
 
 /**
  * Atiende todo lo que llega a /api: resuelve la ruta, ejecuta el controlador y traduce los errores
- * al formato del contrato: 400 (regla de negocio o petición inválida), 404 (ruta inexistente) y 500.
+ * al formato del contrato: 400 (regla de negocio o petición inválida), 404 (ruta inexistente),
+ * 503 (otro servicio no responde) y 500.
  */
 public class ApiHandler implements HttpHandler {
 
@@ -35,6 +36,8 @@ public class ApiHandler implements HttpHandler {
                 respuesta = atender(intercambio);
             } catch (ReglaDeNegocioException | SolicitudInvalidaException e) {
                 respuesta = Respuesta.error(400, e.getMessage());
+            } catch (ServicioNoDisponibleException e) {
+                respuesta = Respuesta.error(503, e.getMessage());
             } catch (RuntimeException e) {
                 System.err.println("Error inesperado en " + intercambio.getRequestMethod() + " "
                         + intercambio.getRequestURI());

@@ -9,7 +9,8 @@ import com.restaurante.infrastructure.config.DatosDemo;
  * Punto de entrada web. Argumentos opcionales:
  * <ul>
  *   <li>--puerto=N  puerto HTTP (por defecto 8080, o la variable de entorno PUERTO)</li>
- *   <li>--demo      carga un menú y una orden de ejemplo</li>
+ *   <li>--demo      carga una orden de ejemplo (el Menú debe estar arrancado con --demo)</li>
+ *   <li>--menu=URL  servicio de Menú (por defecto http://localhost:8081, o la variable MENU_URL)</li>
  * </ul>
  */
 public class MainWeb {
@@ -17,16 +18,15 @@ public class MainWeb {
 
     public static void main(String[] args) throws IOException {
         int puerto = puerto(args);
-        Aplicacion app = Aplicacion.crear();
+        String urlMenu = Aplicacion.urlMenu(args);
+        Aplicacion app = Aplicacion.crear(urlMenu);
         boolean demo = false;
         for (String arg : args) {
             if (arg.equals("--demo")) {
                 demo = true;
             }
         }
-        if (demo) {
-            DatosDemo.cargar(app);
-        }
+        boolean demoCargado = demo && DatosDemo.cargar(app);
 
         ServidorWeb servidor = new ServidorWeb(app, puerto);
         servidor.iniciar();
@@ -35,7 +35,8 @@ public class MainWeb {
         System.out.println("=== Sistema de Pedidos de Restaurante ===");
         System.out.println("Interfaz web: http://localhost:" + servidor.getPuerto());
         System.out.println("API REST:     http://localhost:" + servidor.getPuerto() + "/api");
-        if (demo) {
+        System.out.println("Menú en:      " + urlMenu);
+        if (demoCargado) {
             System.out.println("Datos de ejemplo cargados.");
         }
         System.out.println("Presiona Ctrl+C para detener el servidor.");

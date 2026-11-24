@@ -8,7 +8,6 @@ import java.util.NoSuchElementException;
 import java.util.Scanner;
 import java.util.stream.Collectors;
 
-import com.restaurante.application.port.in.AdministrarMenuUseCase;
 import com.restaurante.application.port.in.CobrarOrdenUseCase;
 import com.restaurante.application.port.in.GestionarCocinaUseCase;
 import com.restaurante.application.port.in.GestionarCocinaUseCase.LineaEnCocina;
@@ -21,9 +20,9 @@ import com.restaurante.domain.Orden;
 import com.restaurante.domain.Pago;
 import com.restaurante.domain.Plato;
 import com.restaurante.domain.ReglaDeNegocioException;
-import com.restaurante.domain.TipoModificador;
 import com.restaurante.domain.TipoOrden;
 import com.restaurante.domain.Totales;
+import com.restaurante.infrastructure.in.web.http.ServicioNoDisponibleException;
 
 /**
  * Adaptador de entrada (consola interactiva).
@@ -34,20 +33,17 @@ import com.restaurante.domain.Totales;
  */
 public class MenuConsola {
 
-    private final AdministrarMenuUseCase administrarMenu;
     private final GestionarOrdenUseCase gestionarOrden;
     private final GestionarCocinaUseCase gestionarCocina;
     private final CobrarOrdenUseCase cobrarOrden;
     private final Scanner entrada;
     private final PrintStream salida;
 
-    public MenuConsola(AdministrarMenuUseCase administrarMenu,
-                       GestionarOrdenUseCase gestionarOrden,
+    public MenuConsola(GestionarOrdenUseCase gestionarOrden,
                        GestionarCocinaUseCase gestionarCocina,
                        CobrarOrdenUseCase cobrarOrden,
                        Scanner entrada,
                        PrintStream salida) {
-        this.administrarMenu = administrarMenu;
         this.gestionarOrden = gestionarOrden;
         this.gestionarCocina = gestionarCocina;
         this.cobrarOrden = cobrarOrden;
@@ -76,8 +72,8 @@ public class MenuConsola {
         salida.println();
         salida.println("------------------- MENÚ -------------------");
         salida.println(" Administrador");
-        salida.println("   1. Registrar un plato");
-        salida.println("   2. Registrar un modificador (extra o exclusión)");
+        salida.println("   1. Registrar un plato           (se hace en el servicio de Menú)");
+        salida.println("   2. Registrar un modificador     (se hace en el servicio de Menú)");
         salida.println("   3. Consultar el menú");
         salida.println(" Mesero");
         salida.println("   4. Abrir una nueva orden");
@@ -100,8 +96,7 @@ public class MenuConsola {
     private boolean ejecutar(String opcion) {
         try {
             switch (opcion) {
-                case "1" -> registrarPlato();
-                case "2" -> registrarModificador();
+                case "1", "2" -> menuEnSuServicio();
                 case "3" -> consultarMenu();
                 case "4" -> abrirNuevaOrden();
                 case "5" -> agregarLineaAOrden();
@@ -117,7 +112,7 @@ public class MenuConsola {
                 }
                 default -> salida.println("Opción no válida. Escribe un número del 0 al 12.");
             }
-        } catch (ReglaDeNegocioException e) {
+        } catch (ReglaDeNegocioException | ServicioNoDisponibleException e) {
             salida.println("No se pudo completar la operación: " + e.getMessage());
         }
         return true;
@@ -125,60 +120,24 @@ public class MenuConsola {
 
     // ================================================================ ADMINISTRADOR
 
-    private void registrarPlato() {
+    /**
+     * El menú se administra en su propio servicio (puerto 8081). Esta consola es de Órdenes,
+     * Cocina y Caja: solo lo consulta.
+     */
+    private void menuEnSuServicio() {
         salida.println();
-        salida.println("-- Registrar plato --");
-        String id = leerLinea("Id del plato (ej. P-001): ");
-        String nombre = leerLinea("Nombre: ");
-        BigDecimal precio = leerDecimal("Precio base (ej. 85.50): ");
-        if (precio == null) {
-            return; // ya se informó el error de formato
-        }
-        BigDecimal tasa = leerDecimal("Tasa de impuesto como fracción (0.16 = 16 %): ");
-        if (tasa == null) {
-            return;
-        }
-
-        Plato registrado = administrarMenu.registrarPlato(new Plato(id, nombre, precio, tasa));
-        salida.println("Plato registrado: " + registrado.id() + " - " + registrado.nombre());
-    }
-
-    private void registrarModificador() {
-        salida.println();
-        salida.println("-- Registrar modificador --");
-        String id = leerLinea("Id del modificador (ej. M-001): ");
-        String nombre = leerLinea("Nombre (ej. Queso extra, Sin cebolla): ");
-        salida.println("Tipo:");
-        salida.println("  1. EXTRA (ingrediente adicional)");
-        salida.println("  2. EXCLUSION (quitar un ingrediente, sin costo)");
-        TipoModificador tipo = switch (leerLinea("Elige el tipo: ")) {
-            case "1" -> TipoModificador.EXTRA;
-            case "2" -> TipoModificador.EXCLUSION;
-            default -> null;
-        };
-        if (tipo == null) {
-            salida.println("Tipo de modificador no válido.");
-            return;
-        }
-        BigDecimal costo = BigDecimal.ZERO;
-        if (tipo == TipoModificador.EXTRA) {
-            costo = leerDecimalOpcional("Costo extra (Enter para 0): ");
-            if (costo == null) {
-                return;
-            }
-        }
-
-        Modificador registrado = administrarMenu.registrarModificador(new Modificador(id, nombre, tipo, costo));
-        salida.println("Modificador registrado: " + registrado.id() + " - " + registrado.nombre()
-                + " (" + registrado.tipo() + ")");
+        salida.println("Los platos y modificadores se registran en el servicio de Menú:");
+        salida.println("  - en la página web, pestaña Menú, o");
+        salida.println("  - con su API: POST /api/platos y POST /api/modificadores (puerto 8081).");
+        salida.println("Aquí puedes consultarlos con la opción 3.");
     }
 
     private void consultarMenu() {
-        List<Plato> platos = administrarMenu.listarPlatos();
+        List<Plato> platos = gestionarOrden.consultarPlatos();
         salida.println();
         salida.println("-- Platos --");
         if (platos.isEmpty()) {
-            salida.println("(No hay platos. Usa la opción 1 para registrarlos.)");
+            salida.println("(No hay platos. Regístralos en el servicio de Menú.)");
         } else {
             salida.printf("%-10s %-30s %12s %10s%n", "ID", "NOMBRE", "PRECIO", "IMPUESTO");
             for (Plato p : platos) {
@@ -188,11 +147,11 @@ public class MenuConsola {
             }
         }
 
-        List<Modificador> modificadores = administrarMenu.listarModificadores();
+        List<Modificador> modificadores = gestionarOrden.consultarModificadores();
         salida.println();
         salida.println("-- Modificadores --");
         if (modificadores.isEmpty()) {
-            salida.println("(No hay modificadores. Usa la opción 2 para registrarlos.)");
+            salida.println("(No hay modificadores. Regístralos en el servicio de Menú.)");
         } else {
             salida.printf("%-10s %-30s %-10s %12s%n", "ID", "NOMBRE", "TIPO", "COSTO EXTRA");
             for (Modificador m : modificadores) {
@@ -234,9 +193,9 @@ public class MenuConsola {
     private void agregarLineaAOrden() {
         salida.println();
         salida.println("-- Agregar línea a una orden --");
-        List<Plato> platos = administrarMenu.listarPlatos();
+        List<Plato> platos = gestionarOrden.consultarPlatos();
         if (platos.isEmpty()) {
-            salida.println("El menú está vacío. Usa la opción 1 para registrar platos primero.");
+            salida.println("El menú está vacío. Registra platos en el servicio de Menú primero.");
             return;
         }
         String ordenId = elegirOrden();
@@ -532,7 +491,7 @@ public class MenuConsola {
 
     /** @return ids elegidos (vacío si no se elige ninguno), o null si la entrada no es válida. */
     private List<String> elegirModificadores() {
-        List<Modificador> modificadores = administrarMenu.listarModificadores();
+        List<Modificador> modificadores = gestionarOrden.consultarModificadores();
         if (modificadores.isEmpty()) {
             return List.of();
         }
@@ -603,17 +562,6 @@ public class MenuConsola {
         salida.print(mensaje);
         salida.flush();
         return entrada.nextLine().trim();
-    }
-
-    /** @return el número leído, o null si el formato es inválido (ya se avisó al usuario). */
-    private BigDecimal leerDecimal(String mensaje) {
-        String texto = leerLinea(mensaje).replace(',', '.');
-        try {
-            return new BigDecimal(texto);
-        } catch (NumberFormatException e) {
-            salida.println("Número no válido: \"" + texto + "\".");
-            return null;
-        }
     }
 
     /** @return el entero leído, o null si el formato es inválido (ya se avisó al usuario). */
