@@ -266,12 +266,22 @@ class ApiRestTest {
         assertEquals(200, rechazado.estado());
         assertEquals("RECHAZADO", rechazado.objeto().get("estado").getAsString());
 
+        // El intento rechazado se queda en Caja; a Órdenes solo le llega OrdenCobrada.
         JsonObject orden = get("/api/ordenes/" + ordenId).objeto();
         assertEquals("ABIERTA", orden.get("estado").getAsString());
-        assertEquals(1, orden.getAsJsonArray("pagos").size());
+        assertTrue(orden.getAsJsonArray("pagos").isEmpty());
 
         Resultado efectivo = post("/api/caja/ordenes/" + ordenId + "/cobrar", "{\"metodo\":\"EFECTIVO\"}");
         assertEquals("APROBADO", efectivo.objeto().get("estado").getAsString());
+        JsonObject cerrada = get("/api/ordenes/" + ordenId).objeto();
+        assertEquals("CERRADA", cerrada.get("estado").getAsString());
+        assertEquals(1, cerrada.getAsJsonArray("pagos").size());
+
+        // Caja sí guarda los dos intentos
+        JsonArray pagos = get("/api/caja/ordenes/" + ordenId + "/pagos").arreglo();
+        assertEquals(2, pagos.size());
+        assertEquals("RECHAZADO", pagos.get(0).getAsJsonObject().get("estado").getAsString());
+        assertEquals("APROBADO", pagos.get(1).getAsJsonObject().get("estado").getAsString());
     }
 
     @Test

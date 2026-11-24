@@ -12,7 +12,7 @@ package com.restaurante.eventos;
  * OrdenCancelada  Órdenes      Cocina, Caja
  * LineaIniciada   Cocina       Órdenes
  * LineaLista      Cocina       Órdenes
- * OrdenCobrada    Caja         Órdenes
+ * OrdenCobrada    Caja         Órdenes, Cocina
  * </pre>
  */
 public final class TiposEvento {

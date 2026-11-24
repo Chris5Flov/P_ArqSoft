@@ -8,10 +8,8 @@ import java.util.NoSuchElementException;
 import java.util.Scanner;
 import java.util.stream.Collectors;
 
-import com.restaurante.application.port.in.CobrarOrdenUseCase;
 import com.restaurante.application.port.in.GestionarOrdenUseCase;
 import com.restaurante.domain.LineaPedido;
-import com.restaurante.domain.MetodoPago;
 import com.restaurante.domain.Modificador;
 import com.restaurante.domain.ModificadorAplicado;
 import com.restaurante.domain.Orden;
@@ -32,16 +30,13 @@ import com.restaurante.infrastructure.in.web.http.ServicioNoDisponibleException;
 public class MenuConsola {
 
     private final GestionarOrdenUseCase gestionarOrden;
-    private final CobrarOrdenUseCase cobrarOrden;
     private final Scanner entrada;
     private final PrintStream salida;
 
     public MenuConsola(GestionarOrdenUseCase gestionarOrden,
-                       CobrarOrdenUseCase cobrarOrden,
                        Scanner entrada,
                        PrintStream salida) {
         this.gestionarOrden = gestionarOrden;
-        this.cobrarOrden = cobrarOrden;
         this.entrada = entrada;
         this.salida = salida;
     }
@@ -80,8 +75,8 @@ public class MenuConsola {
         salida.println(" Cocinero");
         salida.println("  10. Ver pedidos pendientes y actualizar su estado  (se hace en el servicio de Cocina)");
         salida.println(" Cajero");
-        salida.println("  11. Consultar los totales de una orden");
-        salida.println("  12. Cerrar una orden y pagar");
+        salida.println("  11. Consultar los totales de una orden  (se hace en el servicio de Caja)");
+        salida.println("  12. Cerrar una orden y pagar          (se hace en el servicio de Caja)");
         salida.println();
         salida.println("   0. Salir");
         salida.println("--------------------------------------------");
@@ -100,8 +95,7 @@ public class MenuConsola {
                 case "8" -> cancelarOrdenCompleta();
                 case "9" -> verDetalleDeOrden();
                 case "10" -> cocinaEnSuServicio();
-                case "11" -> consultarTotales();
-                case "12" -> cobrarYCerrarOrden();
+                case "11", "12" -> cajaEnSuServicio();
                 case "0" -> {
                     return false;
                 }
@@ -321,65 +315,12 @@ public class MenuConsola {
 
     // ================================================================ CAJERO
 
-    private void consultarTotales() {
+    /** Caja ya es su propio servicio (puerto 8084); se cobra desde la pestaña Caja. */
+    private void cajaEnSuServicio() {
         salida.println();
-        salida.println("-- Totales de una orden --");
-        String ordenId = elegirOrden();
-        if (ordenId == null) {
-            return;
-        }
-        BigDecimal descuento = leerDecimalOpcional("Descuento en monto (Enter para 0): ");
-        if (descuento == null) {
-            return;
-        }
-        BigDecimal propina = leerDecimalOpcional("Propina (Enter para 0): ");
-        if (propina == null) {
-            return;
-        }
-
-        imprimirTotales(cobrarOrden.calcularTotales(ordenId, descuento, propina));
-    }
-
-    private void cobrarYCerrarOrden() {
-        salida.println();
-        salida.println("-- Cerrar orden y pagar --");
-        String ordenId = elegirOrden();
-        if (ordenId == null) {
-            return;
-        }
-        BigDecimal descuento = leerDecimalOpcional("Descuento en monto (Enter para 0): ");
-        if (descuento == null) {
-            return;
-        }
-        BigDecimal propina = leerDecimalOpcional("Propina (Enter para 0): ");
-        if (propina == null) {
-            return;
-        }
-        imprimirTotales(cobrarOrden.calcularTotales(ordenId, descuento, propina));
-
-        salida.println("Método de pago:");
-        salida.println("  1. EFECTIVO");
-        salida.println("  2. TARJETA");
-        salida.println("  3. PASARELA_DIGITAL");
-        MetodoPago metodo = switch (leerLinea("Elige el método: ")) {
-            case "1" -> MetodoPago.EFECTIVO;
-            case "2" -> MetodoPago.TARJETA;
-            case "3" -> MetodoPago.PASARELA_DIGITAL;
-            default -> null;
-        };
-        if (metodo == null) {
-            salida.println("Método de pago no válido.");
-            return;
-        }
-
-        Pago pago = cobrarOrden.cobrar(ordenId, metodo, descuento, propina);
-        if (pago.esAprobado()) {
-            salida.println("Pago APROBADO (" + pago.metodo() + ") por " + pago.monto().toPlainString()
-                    + ", referencia " + pago.referencia() + ". La orden quedó CERRADA.");
-        } else {
-            salida.println("Pago " + pago.estado() + " (" + pago.metodo() + ") por " + pago.monto().toPlainString()
-                    + ". La orden sigue ABIERTA; intenta con otro método.");
-        }
+        salida.println("Los totales y el cobro se hacen en el servicio de Caja:");
+        salida.println("  - en la página web, pestaña Caja, o");
+        salida.println("  - con su API: GET /api/caja/ordenes/{id}/totales y POST /api/caja/ordenes/{id}/cobrar (puerto 8084).");
     }
 
     // ================================================================ utilidades de selección
@@ -523,20 +464,6 @@ public class MenuConsola {
             return Integer.valueOf(texto);
         } catch (NumberFormatException e) {
             salida.println("Número entero no válido: \"" + texto + "\".");
-            return null;
-        }
-    }
-
-    /** Igual que leerDecimal, pero Enter vacío significa 0. */
-    private BigDecimal leerDecimalOpcional(String mensaje) {
-        String texto = leerLinea(mensaje).replace(',', '.');
-        if (texto.isEmpty()) {
-            return BigDecimal.ZERO;
-        }
-        try {
-            return new BigDecimal(texto);
-        } catch (NumberFormatException e) {
-            salida.println("Número no válido: \"" + texto + "\".");
             return null;
         }
     }

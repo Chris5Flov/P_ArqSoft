@@ -8,9 +8,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.restaurante.domain.EstadoCocina;
 import com.restaurante.domain.EstadoOrden;
 import com.restaurante.domain.LineaPedido;
+import com.restaurante.domain.MetodoPago;
 import com.restaurante.domain.Modificador;
 import com.restaurante.domain.ModificadorAplicado;
 import com.restaurante.domain.Orden;
+import com.restaurante.domain.Pago;
 import com.restaurante.domain.PagosDePrueba;
 import com.restaurante.domain.Plato;
 import com.restaurante.domain.ReglaDeNegocioException;
@@ -18,12 +20,15 @@ import com.restaurante.domain.TipoModificador;
 import com.restaurante.domain.TipoOrden;
 import com.restaurante.eventos.DatosEventos.LineaDeOrden;
 import com.restaurante.eventos.DatosEventos.LineaDeOrdenId;
+import com.restaurante.eventos.DatosEventos.OrdenAbierta;
 import com.restaurante.eventos.DatosEventos.OrdenId;
+import com.restaurante.eventos.DatosEventos.OrdenPagada;
 import com.restaurante.eventos.Evento;
 import com.restaurante.eventos.PublicadorEventosEnMemoria;
 import com.restaurante.eventos.TiposEvento;
 import com.restaurante.infrastructure.persistence.OrdenRepositoryMemoria;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -212,6 +217,16 @@ class GestionarOrdenServiceTest {
     }
 
     @Test
+    void publicaOrdenCreadaParaQueCajaArmeSuCopia() {
+        OrdenAbierta datos = bus.publicados(TiposEvento.ORDEN_CREADA).get(0).datosComo(OrdenAbierta.class);
+
+        assertEquals(orden.getId(), datos.ordenId());
+        assertEquals("SALA", datos.tipo());
+        assertEquals("Mesa 5", datos.referencia());
+        assertEquals(orden.getFechaCreacion().withNano(0), LocalDateTime.parse(datos.fecha()));
+    }
+
+    @Test
     void publicaLineaCreadaConLaLineaCompletaYSuPrecio() {
         LineaPedido linea = servicio.agregarLinea(orden.getId(), "P1", 2, List.of("M1")).getLineas().get(0);
 
@@ -233,7 +248,7 @@ class GestionarOrdenServiceTest {
         servicio.cancelarLinea(orden.getId(), lineaId);
         servicio.cancelarOrden(orden.getId());
 
-        assertEquals(List.of(TiposEvento.LINEA_CREADA, TiposEvento.LINEA_MODIFICADA,
+        assertEquals(List.of(TiposEvento.ORDEN_CREADA, TiposEvento.LINEA_CREADA, TiposEvento.LINEA_MODIFICADA,
                 TiposEvento.LINEA_CANCELADA, TiposEvento.ORDEN_CANCELADA), tiposPublicados());
         assertEquals(3, bus.publicados(TiposEvento.LINEA_MODIFICADA).get(0).datosComo(LineaDeOrden.class).cantidad());
         assertEquals(new LineaDeOrdenId(orden.getId(), lineaId),
@@ -245,7 +260,8 @@ class GestionarOrdenServiceTest {
     @Test
     void siLaReglaFallaNoPublicaNada() {
         assertThrows(ReglaDeNegocioException.class, () -> servicio.agregarLinea(orden.getId(), "P1", 0, List.of()));
-        assertTrue(bus.publicados().isEmpty());
+        assertThrows(ReglaDeNegocioException.class, () -> servicio.abrir(TipoOrden.SALA, " "));
+        assertEquals(List.of(TiposEvento.ORDEN_CREADA), tiposPublicados()); // solo el de setUp
     }
 
     @Test
@@ -266,5 +282,49 @@ class GestionarOrdenServiceTest {
         servicio.lineaIniciada("no-existe", "L1");
         servicio.lineaLista(orden.getId(), "no-existe");
         assertEquals(EstadoOrden.ABIERTA, orden.getEstado());
+    }
+
+    // ---------------------------------------------------------------- cobro en Caja (evento)
+
+    private OrdenPagada pagadaEnCaja(String monto, String descuento, String propina) {
+        return new OrdenPagada(orden.getId(), "PG-1", "2026-11-23T14:00:00", "TARJETA", monto, "TAR-123",
+                descuento, propina);
+    }
+
+    @Test
+    void ordenCobradaRegistraElPagoYCierraLaOrdenConLosMismosTotales() {
+        servicio.agregarLinea(orden.getId(), "P1", 2, List.of()); // 170 + 27.20 = 197.20
+
+        // descuento 17 y propina 10: 153 + 24.48 + 10 = 187.48
+        servicio.ordenCobrada(pagadaEnCaja("187.48", "17.00", "10.00"));
+
+        assertEquals(EstadoOrden.CERRADA, orden.getEstado());
+        Pago pago = orden.getPagoAprobado().orElseThrow();
+        assertEquals("PG-1", pago.id());
+        assertEquals(MetodoPago.TARJETA, pago.metodo());
+        assertEquals(new BigDecimal("187.48"), orden.getTotales().orElseThrow().total());
+        assertEquals(new BigDecimal("17.00"), orden.getTotales().orElseThrow().descuento());
+    }
+
+    @Test
+    void siOrdenCobradaLlegaDosVecesNoPasaNada() {
+        servicio.agregarLinea(orden.getId(), "P1", 1, List.of());
+        servicio.ordenCobrada(pagadaEnCaja("98.60", "0.00", "0.00"));
+        servicio.ordenCobrada(pagadaEnCaja("98.60", "0.00", "0.00"));
+
+        assertEquals(1, orden.getPagos().size());
+        assertEquals(EstadoOrden.CERRADA, orden.getEstado());
+    }
+
+    @Test
+    void siElPagoNoCubreLoQueTieneOrdenesSeAvisaYNoSeCierra() {
+        // El mesero agregó algo justo cuando Caja cobraba: la copia de Caja no lo tenía
+        servicio.agregarLinea(orden.getId(), "P1", 2, List.of());
+        servicio.ordenCobrada(pagadaEnCaja("98.60", "0.00", "0.00"));
+
+        assertEquals(EstadoOrden.ABIERTA, orden.getEstado());
+        assertTrue(orden.getPagos().isEmpty());
+        servicio.ordenCobrada(new OrdenPagada("no-existe", "PG-2", "2026-11-23T14:00:00", "EFECTIVO",
+                "10.00", "EF-1", "0.00", "0.00"));
     }
 }

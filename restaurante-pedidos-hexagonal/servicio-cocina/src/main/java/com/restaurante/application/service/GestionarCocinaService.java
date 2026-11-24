@@ -85,6 +85,11 @@ public class GestionarCocinaService implements GestionarCocinaUseCase, RecibirPe
                 .forEach(linea -> aplicar(linea, linea::cancelar));
     }
 
+    @Override
+    public void ordenCobrada(String ordenId) {
+        lineas.listarDeOrden(ordenId).forEach(linea -> aplicar(linea, linea::cerrarPorCobro));
+    }
+
     // ---------------------------------------------------------------- utilidades
 
     /**

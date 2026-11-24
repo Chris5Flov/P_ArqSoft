@@ -11,7 +11,7 @@ import com.restaurante.infrastructure.eventos.ReceptorEventosController;
 import com.restaurante.infrastructure.in.web.http.ServidorApi;
 
 /**
- * Arranca el servicio de Órdenes (puerto 8082): la API de órdenes y, hasta el Paso 7, la de caja.
+ * Arranca el servicio de Órdenes (puerto 8082): la API de órdenes del mesero.
  * La página web la sirve el gateway (8080). Opciones:
  * <ul>
  *   <li>--puerto=N  puerto HTTP (por defecto 8082)</li>
@@ -38,8 +38,8 @@ public class MainOrdenes {
                 opciones.urlPropia(servidor.getPuerto()) + ReceptorEventosController.RUTA);
         boolean demoCargado = opciones.tiene("demo") && DatosDemo.cargar(app);
 
-        System.out.println("=== Servicio de Órdenes (con Caja) ===");
-        System.out.println("API REST: http://localhost:" + servidor.getPuerto() + "/api/ordenes y /api/caja");
+        System.out.println("=== Servicio de Órdenes ===");
+        System.out.println("API REST: http://localhost:" + servidor.getPuerto() + "/api/ordenes");
         System.out.println("Menú en:  " + urlMenu + "   Bus en: " + opciones.urlBus());
         if (demoCargado) {
             System.out.println("Orden de ejemplo cargada.");
@@ -53,7 +53,6 @@ public class MainOrdenes {
         app.suscripciones().forEach(receptor::al);
         return new ServidorApi(List.of(
                 new OrdenRestController(app.gestionarOrden()),
-                new CajaRestController(app.cobrarOrden()),
                 receptor), puerto);
     }
 }

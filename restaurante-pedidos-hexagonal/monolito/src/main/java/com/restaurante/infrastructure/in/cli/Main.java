@@ -24,7 +24,7 @@ public class Main {
         }
 
         try (Scanner scanner = new Scanner(System.in)) {
-            new MenuConsola(app.gestionarOrden(), app.cobrarOrden(),
+            new MenuConsola(app.gestionarOrden(),
                     scanner, System.out).iniciar();
         }
     }

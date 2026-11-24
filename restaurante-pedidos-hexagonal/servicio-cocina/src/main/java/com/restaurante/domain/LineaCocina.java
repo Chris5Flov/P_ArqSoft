@@ -15,6 +15,7 @@ public class LineaCocina {
     private int cantidad;
     private List<String> modificadores;
     private EstadoCocina estado = EstadoCocina.PENDIENTE;
+    private boolean ordenCobrada; // la orden ya se pagó y se cerró en Caja
 
     public LineaCocina(String ordenId, String lineaId, String referenciaOrden, String plato,
                        int cantidad, List<String> modificadores) {
@@ -27,6 +28,7 @@ public class LineaCocina {
 
     /** RF3: PENDIENTE -> EN_COCCION. Desde aquí el mesero ya no puede cambiarla. */
     public void iniciarCoccion() {
+        exigirOrdenAbierta();
         if (estado != EstadoCocina.PENDIENTE) {
             throw new ReglaDeNegocioException(
                     "Solo se puede iniciar la cocción de una línea PENDIENTE (estado actual: " + estado + ")");
@@ -36,6 +38,7 @@ public class LineaCocina {
 
     /** RF3: EN_COCCION -> LISTO. */
     public void marcarLista() {
+        exigirOrdenAbierta();
         if (estado != EstadoCocina.EN_COCCION) {
             throw new ReglaDeNegocioException(
                     "Solo se puede marcar como lista una línea EN_COCCION (estado actual: " + estado + ")");
@@ -56,9 +59,20 @@ public class LineaCocina {
         estado = EstadoCocina.CANCELADA;
     }
 
-    /** PENDIENTE o EN_COCCION: lo que la cocina todavía tiene que atender. */
+    /** La orden se cobró (evento OrdenCobrada): la línea sale de la lista de la cocina. */
+    public void cerrarPorCobro() {
+        ordenCobrada = true;
+    }
+
+    /** PENDIENTE o EN_COCCION de una orden que sigue abierta: lo que la cocina todavía tiene que atender. */
     public boolean estaPorAtender() {
-        return estado == EstadoCocina.PENDIENTE || estado == EstadoCocina.EN_COCCION;
+        return !ordenCobrada && (estado == EstadoCocina.PENDIENTE || estado == EstadoCocina.EN_COCCION);
+    }
+
+    private void exigirOrdenAbierta() {
+        if (ordenCobrada) {
+            throw new ReglaDeNegocioException("La orden " + ordenId + " ya se cobró y se cerró");
+        }
     }
 
     private void exigirPendiente(String accion) {

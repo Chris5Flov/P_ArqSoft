@@ -12,19 +12,26 @@ import com.restaurante.domain.MetodoPago;
 import com.restaurante.domain.Orden;
 import com.restaurante.domain.Pago;
 import com.restaurante.domain.PagosDePrueba;
-import com.restaurante.domain.Plato;
 import com.restaurante.domain.ReglaDeNegocioException;
 import com.restaurante.domain.TipoOrden;
 import com.restaurante.domain.Totales;
 import com.restaurante.infrastructure.payment.PagoEfectivoAdapter;
 import com.restaurante.infrastructure.payment.PagoTarjetaSimuladoAdapter;
-import com.restaurante.infrastructure.persistence.OrdenRepositoryMemoria;
+import com.restaurante.eventos.DatosEventos.LineaDeOrden;
+import com.restaurante.eventos.DatosEventos.ModificadorDeLinea;
+import com.restaurante.eventos.DatosEventos.OrdenAbierta;
+import com.restaurante.eventos.DatosEventos.OrdenPagada;
+import com.restaurante.eventos.PublicadorEventosEnMemoria;
+import com.restaurante.eventos.TiposEvento;
+import com.restaurante.infrastructure.persistence.OrdenCajaRepositoryMemoria;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+/** Caja con su propia copia de las órdenes, armada con los eventos de Órdenes. */
 class CobrarOrdenServiceTest {
 
     /** Procesador falso que registra los montos cobrados y responde con el estado configurado. */
@@ -49,7 +56,8 @@ class CobrarOrdenServiceTest {
         }
     }
 
-    private OrdenRepositoryMemoria repositorio;
+    private OrdenCajaRepositoryMemoria repositorio;
+    private PublicadorEventosEnMemoria bus;
     private ProcesadorEspia efectivo;
     private ProcesadorEspia tarjeta;
     private CobrarOrdenService servicio;
@@ -57,15 +65,24 @@ class CobrarOrdenServiceTest {
 
     @BeforeEach
     void setUp() {
-        repositorio = new OrdenRepositoryMemoria();
+        repositorio = new OrdenCajaRepositoryMemoria();
+        bus = new PublicadorEventosEnMemoria();
         efectivo = new ProcesadorEspia(MetodoPago.EFECTIVO);
         tarjeta = new ProcesadorEspia(MetodoPago.TARJETA);
-        servicio = new CobrarOrdenService(repositorio, List.of(efectivo, tarjeta));
-        orden = Orden.abrir(TipoOrden.SALA, "Mesa 5");
+        servicio = new CobrarOrdenService(repositorio, List.of(efectivo, tarjeta), bus);
+
+        // Caja arma su copia con lo que le llega de Órdenes por el bus.
         // 85 x 2 al 16 % + 20 x 1 sin impuesto = 190.00 + 27.20 de impuestos = 217.20
-        orden.agregarLinea(new Plato("P1", "Tacos", new BigDecimal("85"), new BigDecimal("0.16")), 2, List.of());
-        orden.agregarLinea(new Plato("P2", "Agua", new BigDecimal("20"), BigDecimal.ZERO), 1, List.of());
-        repositorio.guardar(orden);
+        servicio.ordenCreada(new OrdenAbierta("O1", "SALA", "Mesa 5", "2026-11-23T13:00:00"));
+        servicio.lineaCreada(linea("L1", "P1", "Tacos", 2, "85.00", "0.16"));
+        servicio.lineaCreada(linea("L2", "P2", "Agua", 1, "20.00", "0"));
+        orden = repositorio.buscarPorId("O1").orElseThrow();
+    }
+
+    private static LineaDeOrden linea(String lineaId, String platoId, String plato, int cantidad,
+                                      String precio, String tasa, ModificadorDeLinea... modificadores) {
+        return new LineaDeOrden("O1", "Mesa 5", lineaId, platoId, plato, cantidad, precio, tasa,
+                List.of(modificadores));
     }
 
     private static BigDecimal dinero(String valor) {
@@ -180,8 +197,8 @@ class CobrarOrdenServiceTest {
 
     @Test
     void noCobraUnaOrdenSinLineas() {
-        Orden vacia = Orden.abrir(TipoOrden.PARA_LLEVAR, "Pedido 1");
-        repositorio.guardar(vacia);
+        servicio.ordenCreada(new OrdenAbierta("O2", "PARA_LLEVAR", "Pedido 1", null));
+        Orden vacia = repositorio.buscarPorId("O2").orElseThrow();
 
         assertThrows(ReglaDeNegocioException.class,
                 () -> servicio.cobrar(vacia.getId(), MetodoPago.EFECTIVO, null, null));
@@ -200,12 +217,95 @@ class CobrarOrdenServiceTest {
     @Test
     void funcionaConLosAdaptadoresDelProyecto() {
         CobrarOrdenService real = new CobrarOrdenService(repositorio,
-                List.of(new PagoEfectivoAdapter(), new PagoTarjetaSimuladoAdapter()));
+                List.of(new PagoEfectivoAdapter(), new PagoTarjetaSimuladoAdapter()), bus);
 
         Pago pago = real.cobrar(orden.getId(), MetodoPago.TARJETA, null, null);
 
         assertEquals(EstadoPago.APROBADO, pago.estado());
         assertEquals(orden.getId(), pago.ordenId());
         assertEquals(EstadoOrden.CERRADA, orden.getEstado());
+    }
+
+    // ---------------------------------------------------------------- la copia de la orden (eventos)
+
+    @Test
+    void laCopiaConservaElIdLaFechaYLosPreciosDeLaOrdenOriginal() {
+        assertEquals("O1", orden.getId());
+        assertEquals(TipoOrden.SALA, orden.getTipo());
+        assertEquals("Mesa 5", orden.getReferencia());
+        assertEquals(LocalDateTime.of(2026, 11, 23, 13, 0), orden.getFechaCreacion());
+        assertEquals(List.of("L1", "L2"), orden.getLineas().stream().map(l -> l.getId()).toList());
+    }
+
+    @Test
+    void usaElCostoDeLosModificadoresQueVieneEnElEvento() {
+        servicio.lineaCreada(linea("L3", "P1", "Tacos", 1, "85.00", "0.16",
+                new ModificadorDeLinea("M1", "Queso extra", "EXTRA", "15.00")));
+
+        // 217.20 + 100 x 1.16 = 333.20
+        assertEquals(dinero("333.20"), servicio.calcularTotales("O1", null, null).total());
+    }
+
+    @Test
+    void siUnEventoLlegaDosVecesNoSeDuplica() {
+        servicio.ordenCreada(new OrdenAbierta("O1", "SALA", "Mesa 5", "2026-11-23T13:00:00"));
+        servicio.lineaCreada(linea("L1", "P1", "Tacos", 2, "85.00", "0.16"));
+
+        assertEquals(2, repositorio.buscarPorId("O1").orElseThrow().getLineas().size());
+        assertEquals(dinero("217.20"), servicio.calcularTotales("O1", null, null).total());
+    }
+
+    @Test
+    void modificarYCancelarLineasCambiaLosTotales() {
+        servicio.lineaModificada(linea("L1", "P1", "Tacos", 1, "85.00", "0.16"));
+        assertEquals(dinero("118.60"), servicio.calcularTotales("O1", null, null).total());
+
+        servicio.lineaCancelada("O1", "L2");
+        assertEquals(dinero("98.60"), servicio.calcularTotales("O1", null, null).total());
+    }
+
+    @Test
+    void unaOrdenCanceladaYaNoSePuedeCobrar() {
+        servicio.ordenCancelada("O1");
+
+        assertThrows(ReglaDeNegocioException.class,
+                () -> servicio.cobrar("O1", MetodoPago.EFECTIVO, null, null));
+        assertTrue(efectivo.cobros.isEmpty());
+    }
+
+    @Test
+    void publicaOrdenCobradaSoloCuandoElPagoSeAprueba() {
+        tarjeta.respuesta = EstadoPago.RECHAZADO;
+        servicio.cobrar("O1", MetodoPago.TARJETA, null, null);
+        assertTrue(bus.publicados().isEmpty());
+
+        Pago pago = servicio.cobrar("O1", MetodoPago.EFECTIVO, dinero("19"), dinero("10"));
+
+        assertEquals(1, bus.publicados(TiposEvento.ORDEN_COBRADA).size());
+        OrdenPagada datos = bus.publicados().get(0).datosComo(OrdenPagada.class);
+        assertEquals("O1", datos.ordenId());
+        assertEquals(pago.id(), datos.pagoId());
+        assertEquals("EFECTIVO", datos.metodo());
+        assertEquals("205.48", datos.monto());
+        assertEquals("19.00", datos.descuento());
+        assertEquals("10.00", datos.propina());
+    }
+
+    @Test
+    void ignoraLosCambiosQueLleganDespuesDeCobrar() {
+        servicio.cobrar("O1", MetodoPago.EFECTIVO, null, null);
+
+        servicio.lineaCreada(linea("L9", "P2", "Agua", 1, "20.00", "0"));
+        servicio.ordenCancelada("O1");
+
+        assertEquals(EstadoOrden.CERRADA, orden.getEstado());
+        assertEquals(2, orden.getLineas().size());
+    }
+
+    @Test
+    void ignoraLineasDeUnaOrdenQueNoConoce() {
+        servicio.lineaCreada(new LineaDeOrden("otra", "Mesa 9", "L1", "P1", "Tacos", 1, "85.00", "0.16", List.of()));
+
+        assertTrue(repositorio.buscarPorId("otra").isEmpty());
     }
 }

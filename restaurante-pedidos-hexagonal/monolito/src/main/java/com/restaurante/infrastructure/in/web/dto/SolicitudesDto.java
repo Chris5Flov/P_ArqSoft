@@ -16,6 +16,4 @@ public final class SolicitudesDto {
     public record AgregarLineaRequest(String platoId, Integer cantidad, List<String> modificadorIds) { }
 
     public record ModificarLineaRequest(Integer cantidad, List<String> modificadorIds) { }
-
-    public record CobrarRequest(String metodo, String descuento, String propina) { }
 }

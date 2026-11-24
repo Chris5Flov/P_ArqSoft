@@ -122,4 +122,16 @@ class GestionarCocinaServiceTest {
         assertThrows(ReglaDeNegocioException.class, () -> servicio.marcarLista("no-existe", "L1"));
         assertThrows(ReglaDeNegocioException.class, () -> servicio.iniciarCoccion("O1", "no-existe"));
     }
+
+    @Test
+    void unaOrdenCobradaDejaDeVerseEnCocinaYYaNoSePuedeAvanzar() {
+        servicio.lineaCreada(tacos("O1", "L2", 1));
+        servicio.iniciarCoccion("O1", "L2");
+        servicio.lineaCreada(tacos("O2", "L1", 1));
+
+        servicio.ordenCobrada("O1");
+
+        assertEquals(List.of("O2"), servicio.listarPendientes().stream().map(LineaEnCocina::ordenId).toList());
+        assertThrows(ReglaDeNegocioException.class, () -> servicio.marcarLista("O1", "L2"));
+    }
 }

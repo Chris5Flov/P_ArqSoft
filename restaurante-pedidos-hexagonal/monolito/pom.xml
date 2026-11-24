@@ -12,7 +12,7 @@
 
   <artifactId>monolito</artifactId>
   <packaging>jar</packaging>
-  <name>Servicio de Órdenes, con Cocina y Caja (puerto 8082)</name>
+  <name>Servicio de Órdenes (puerto 8082)</name>
 
   <properties>
     <!-- Clase que arranca "mvn compile exec:java". Para la consola:
@@ -35,6 +35,11 @@
     <dependency>
       <groupId>com.restaurante</groupId>
       <artifactId>servicio-cocina</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.restaurante</groupId>
+      <artifactId>servicio-caja</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

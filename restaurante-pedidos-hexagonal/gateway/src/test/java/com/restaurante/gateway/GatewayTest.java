@@ -127,4 +127,15 @@ class GatewayTest {
         assertEquals(404, pedir("GET", "/no-existe.js", null).statusCode());
         assertEquals(404, pedir("GET", "/../pom.xml", null).statusCode());
     }
+
+    @Test
+    void porDefectoCadaPrefijoVaASuServicio() {
+        RutasGateway rutas = RutasGateway.delSistema(new String[] {"--menu=http://m", "--ordenes=http://o"});
+
+        assertEquals("http://m", rutas.servicioPara("/api/platos/P-001").orElseThrow());
+        assertEquals("http://o", rutas.servicioPara("/api/ordenes").orElseThrow());
+        assertEquals("http://localhost:8083", rutas.servicioPara("/api/cocina/pendientes").orElseThrow());
+        assertEquals("http://localhost:8084", rutas.servicioPara("/api/caja/ordenes/1/totales").orElseThrow());
+        assertTrue(rutas.servicioPara("/api/cajas").isEmpty());
+    }
 }

@@ -15,6 +15,7 @@
     <module>bus-eventos</module>
     <module>servicio-menu</module>
     <module>servicio-cocina</module>
+    <module>servicio-caja</module>
     <module>monolito</module>
     <module>gateway</module>
   </modules>
@@ -42,6 +43,11 @@
       <dependency>
         <groupId>com.restaurante</groupId>
         <artifactId>servicio-cocina</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.restaurante</groupId>
+        <artifactId>servicio-caja</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>

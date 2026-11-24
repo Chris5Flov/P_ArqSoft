@@ -35,6 +35,8 @@ public record AplicacionCocina(GestionarCocinaUseCase gestionarCocina, RecibirPe
         });
         suscripciones.put(TiposEvento.ORDEN_CANCELADA,
                 e -> recibirPedidos.ordenCancelada(e.datosComo(OrdenId.class).ordenId()));
+        suscripciones.put(TiposEvento.ORDEN_COBRADA,
+                e -> recibirPedidos.ordenCobrada(e.datosComo(OrdenId.class).ordenId()));
         return suscripciones;
     }
 }

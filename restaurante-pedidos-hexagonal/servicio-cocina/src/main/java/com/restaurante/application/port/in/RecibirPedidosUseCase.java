@@ -15,4 +15,7 @@ public interface RecibirPedidosUseCase {
     void lineaCancelada(String ordenId, String lineaId);
 
     void ordenCancelada(String ordenId);
+
+    /** La orden se pagó en Caja: sus líneas dejan de mostrarse en cocina. */
+    void ordenCobrada(String ordenId);
 }

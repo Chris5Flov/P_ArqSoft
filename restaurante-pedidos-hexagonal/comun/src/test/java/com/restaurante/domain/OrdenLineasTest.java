@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -242,5 +243,29 @@ class OrdenLineasTest {
 
         assertThrows(ReglaDeNegocioException.class, () -> orden.iniciarCoccionLinea(linea.getId()));
         assertEquals(EstadoCocina.PENDIENTE, linea.getEstadoCocina());
+    }
+
+    // ---------------------------------------------------------------- copia (la usa Caja)
+
+    @Test
+    void laCopiaConservaElIdYLaFechaDeLaOriginal() {
+        LocalDateTime fecha = LocalDateTime.of(2026, 11, 23, 13, 0);
+        Orden copia = Orden.copia("O-123", TipoOrden.DELIVERY, "Pedido 7", fecha);
+
+        assertEquals("O-123", copia.getId());
+        assertEquals(fecha, copia.getFechaCreacion());
+        assertEquals(EstadoOrden.ABIERTA, copia.getEstado());
+        assertThrows(ReglaDeNegocioException.class, () -> Orden.copia(" ", TipoOrden.SALA, "Mesa 1", fecha));
+        assertThrows(ReglaDeNegocioException.class, () -> Orden.copia("O-1", TipoOrden.SALA, " ", fecha));
+    }
+
+    @Test
+    void agregarLineaConIdConservaElIdYNoAceptaRepetidos() {
+        orden.agregarLinea("L-1", tacos, 2, List.of(queso));
+
+        assertTrue(orden.tieneLinea("L-1"));
+        assertEquals("L-1", orden.getLineas().get(0).getId());
+        assertThrows(ReglaDeNegocioException.class, () -> orden.agregarLinea("L-1", tacos, 1, List.of()));
+        assertEquals(1, orden.getLineas().size());
     }
 }

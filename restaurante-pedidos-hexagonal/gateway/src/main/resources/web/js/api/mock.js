@@ -293,6 +293,10 @@ export function calcularTotales(ordenId, { descuento, propina }) {
     return responder(() => aTotalesDto(calcular(buscarOrden(ordenId), descuento, propina)));
 }
 
+export function listarPagos(ordenId) {
+    return responder(() => buscarOrden(ordenId).pagos.map((p) => ({ ...p })));
+}
+
 export function cobrar(ordenId, { metodo, descuento, propina }) {
     return responder(() => {
         if (!metodo) {

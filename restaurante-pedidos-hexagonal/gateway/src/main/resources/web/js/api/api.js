@@ -124,6 +124,13 @@ export function calcularTotales(ordenId, { descuento, propina }) {
     return peticion("GET", `/caja/ordenes/${id(ordenId)}/totales?${parametros}`);
 }
 
+/** Todos los intentos de cobro de la orden, también los rechazados (solo Caja los tiene). */
+export function listarPagos(ordenId) {
+    return usandoSimulador
+        ? simulador.listarPagos(ordenId)
+        : peticion("GET", `/caja/ordenes/${id(ordenId)}/pagos`);
+}
+
 export function cobrar(ordenId, { metodo, descuento, propina }) {
     const cuerpo = { metodo, descuento, propina };
     return usandoSimulador

@@ -4,14 +4,14 @@ import com.restaurante.application.port.in.CobrarOrdenUseCase;
 import com.restaurante.domain.MetodoPago;
 import com.restaurante.domain.Pago;
 import com.restaurante.domain.Totales;
-import com.restaurante.infrastructure.in.web.dto.MapeadorDto;
-import com.restaurante.infrastructure.in.web.dto.SolicitudesDto.CobrarRequest;
+import com.restaurante.infrastructure.in.web.dto.CajaDto;
+import com.restaurante.infrastructure.in.web.dto.CajaDto.CobrarRequest;
 import com.restaurante.infrastructure.in.web.http.Conversion;
 import com.restaurante.infrastructure.in.web.http.Enrutador;
 import com.restaurante.infrastructure.in.web.http.Peticion;
 import com.restaurante.infrastructure.in.web.http.Respuesta;
 
-/** RF4 y RF5 (Cajero): totales y cobro de una orden. */
+/** RF4 y RF5 (Cajero): totales, cobro e historial de pagos de una orden. */
 public class CajaRestController implements RestController {
 
     private final CobrarOrdenUseCase cobrarOrden;
@@ -24,6 +24,7 @@ public class CajaRestController implements RestController {
     public void registrarRutas(Enrutador enrutador) {
         enrutador
                 .get("/api/caja/ordenes/{ordenId}/totales", this::calcularTotales)
+                .get("/api/caja/ordenes/{ordenId}/pagos", this::listarPagos)
                 .post("/api/caja/ordenes/{ordenId}/cobrar", this::cobrar);
     }
 
@@ -32,7 +33,13 @@ public class CajaRestController implements RestController {
         Totales totales = cobrarOrden.calcularTotales(peticion.parametro("ordenId"),
                 Conversion.decimal(peticion.consulta("descuento"), "descuento"),
                 Conversion.decimal(peticion.consulta("propina"), "propina"));
-        return Respuesta.ok(MapeadorDto.aDto(totales));
+        return Respuesta.ok(CajaDto.aDto(totales));
+    }
+
+    private Respuesta listarPagos(Peticion peticion) {
+        return Respuesta.ok(cobrarOrden.listarPagos(peticion.parametro("ordenId")).stream()
+                .map(CajaDto::aDto)
+                .toList());
     }
 
     /** Responde 200 tanto si el pago se aprueba como si se rechaza; el estado viene en el PagoDto. */
@@ -42,6 +49,6 @@ public class CajaRestController implements RestController {
                 Conversion.enumeracion(MetodoPago.class, solicitud.metodo(), "metodo"),
                 Conversion.decimal(solicitud.descuento(), "descuento"),
                 Conversion.decimal(solicitud.propina(), "propina"));
-        return Respuesta.ok(MapeadorDto.aDto(pago));
+        return Respuesta.ok(CajaDto.aDto(pago));
     }
 }

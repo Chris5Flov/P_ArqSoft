@@ -2,7 +2,7 @@
 // Solo aparecen las órdenes con todos sus platillos listos para entrega.
 // Los totales siempre los calcula el backend; aquí solo se sugiere la propina rápida.
 
-import { listarOrdenes, obtenerOrden, calcularTotales, cobrar } from "../api/api.js";
+import { listarOrdenes, obtenerOrden, calcularTotales, cobrar, listarPagos } from "../api/api.js";
 import { mostrarExito, mostrarError } from "../componentes/notificaciones.js";
 import { insigniaEstado } from "../componentes/insignia.js";
 import { crear, limpiar, campo, mientrasEspera, mostrarEnPantallaAngosta } from "../util/dom.js";
@@ -25,7 +25,10 @@ export function montar(contenedor) {
         temporizador: null,
         cargandoLista: false,
         recargaPendiente: false,
-        firmaLista: null
+        firmaLista: null,
+        // Cobradas en esta pantalla: Órdenes se entera por el bus un momento después,
+        // así que mientras tanto no se vuelven a mostrar en la lista.
+        cobradas: new Set()
     };
 
     const lista = crear("ul", { class: "lista-ordenes", "aria-label": "Órdenes listas para entrega" });
@@ -93,7 +96,8 @@ export function montar(contenedor) {
             lista.appendChild(crear("li", { class: "cargando" }, "Cargando órdenes…"));
         }
         try {
-            const ordenes = (await listarOrdenes("ABIERTA")).filter(estaListaParaEntrega);
+            const ordenes = (await listarOrdenes("ABIERTA"))
+                .filter((o) => estaListaParaEntrega(o) && !estado.cobradas.has(o.id));
             if (!estado.activa) return;
             // Solo se vuelve a pintar si algo cambió, para no perder el foco del teclado en cada refresco.
             const firma = JSON.stringify(ordenes.map((o) => [o.id, o.totales?.total]));
@@ -210,13 +214,16 @@ export function montar(contenedor) {
                 }
                 const pago = await cobrar(orden.id, { metodo, ...montosCapturados() });
                 pintarResultado(pago);
-                if (pago.estado === "APROBADO") {
+                const aprobado = pago.estado === "APROBADO";
+                if (aprobado) {
                     mostrarExito(`Pago aprobado: ${formatoDinero(pago.monto)}`);
+                    estado.cobradas.add(orden.id);
+                    formularioCobro.hidden = true;
                     cargarLista();
                 } else {
                     mostrarError("Pago rechazado, intenta con otro método");
                 }
-                const actualizada = await obtenerOrden(orden.id);
+                const actualizada = aprobado ? await esperarCierre(orden.id) : await obtenerOrden(orden.id);
                 if (!estado.activa || estado.ordenSeleccionadaId !== orden.id) return;
                 estado.orden = actualizada;
                 pintarEncabezado(actualizada);
@@ -228,6 +235,16 @@ export function montar(contenedor) {
                 mostrarError(error);
             }
         }).then(actualizarBotonCobrar);
+    }
+
+    /** Caja avisa a Órdenes con el evento OrdenCobrada; se espera un poco a que la cierre. */
+    async function esperarCierre(ordenId) {
+        let orden = await obtenerOrden(ordenId);
+        for (let intento = 0; intento < 5 && orden.estado === "ABIERTA"; intento++) {
+            await new Promise((listo) => setTimeout(listo, 300));
+            orden = await obtenerOrden(ordenId);
+        }
+        return orden;
     }
 
     // ------------------------------------------------------------ pintado
@@ -311,14 +328,22 @@ export function montar(contenedor) {
             pago.referencia ? crear("span", {}, `Referencia: ${pago.referencia}`) : null));
     }
 
-    function pintarHistorial(orden) {
+    /** Los intentos de cobro los guarda Caja (Órdenes solo se entera del aprobado). */
+    async function pintarHistorial(orden) {
         limpiar(historial);
-        if (!orden.pagos?.length) {
+        let pagos;
+        try {
+            pagos = await listarPagos(orden.id);
+        } catch {
+            return; // sin historial no se pierde nada: el resultado del cobro ya está en pantalla
+        }
+        if (!estado.activa || estado.ordenSeleccionadaId !== orden.id || !pagos.length) {
             return;
         }
+        limpiar(historial);
         historial.appendChild(crear("div", { class: "pila" },
             crear("h3", { class: "tarjeta__subtitulo" }, "Historial de pagos"),
-            crear("ul", { class: "lista-pagos" }, orden.pagos.map((pago) => crear("li", {},
+            crear("ul", { class: "lista-pagos" }, pagos.map((pago) => crear("li", {},
                 insigniaEstado(pago.estado, "pago"),
                 crear("span", {}, etiqueta(pago.metodo)),
                 crear("span", { class: "texto-secundario" }, `${formatoFecha(pago.fecha)} · ${pago.referencia ?? ""}`),

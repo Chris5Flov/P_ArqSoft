@@ -24,11 +24,11 @@ public class Orden {
     private EstadoOrden estado = EstadoOrden.ABIERTA;
     private Totales totales; // se fija al cerrar la orden (RF5)
 
-    private Orden(String id, TipoOrden tipo, String referencia) {
+    private Orden(String id, TipoOrden tipo, String referencia, LocalDateTime fechaCreacion) {
         this.id = id;
         this.tipo = tipo;
         this.referencia = referencia;
-        this.fechaCreacion = LocalDateTime.now();
+        this.fechaCreacion = fechaCreacion;
     }
 
     /** RF2: abrir una orden. */
@@ -39,16 +39,41 @@ public class Orden {
         if (referencia == null || referencia.isBlank()) {
             throw new ReglaDeNegocioException("La orden necesita una mesa o un identificador de pedido");
         }
-        return new Orden(UUID.randomUUID().toString(), tipo, referencia);
+        return new Orden(UUID.randomUUID().toString(), tipo, referencia, LocalDateTime.now());
+    }
+
+    /**
+     * Copia de una orden que ya existe en otro servicio (Caja arma la suya con los eventos de
+     * Órdenes). Conserva el id y la fecha de la original.
+     */
+    public static Orden copia(String id, TipoOrden tipo, String referencia, LocalDateTime fechaCreacion) {
+        if (id == null || id.isBlank()) {
+            throw new ReglaDeNegocioException("La copia de la orden necesita el id de la original");
+        }
+        Orden orden = abrir(tipo, referencia);
+        return new Orden(id, orden.tipo, orden.referencia,
+                fechaCreacion == null ? orden.fechaCreacion : fechaCreacion);
     }
 
     // ---------------------------------------------------------------- líneas (RF3)
 
     public LineaPedido agregarLinea(Plato plato, int cantidad, List<Modificador> modificadores) {
+        return agregarLinea(UUID.randomUUID().toString(), plato, cantidad, modificadores);
+    }
+
+    /** Igual que la anterior pero con el id de la línea ya dado (para copias de la orden). */
+    public LineaPedido agregarLinea(String lineaId, Plato plato, int cantidad, List<Modificador> modificadores) {
         exigirAbierta();
-        LineaPedido linea = new LineaPedido(UUID.randomUUID().toString(), plato, cantidad, modificadores);
+        if (tieneLinea(lineaId)) {
+            throw new ReglaDeNegocioException("La orden ya tiene la línea " + lineaId);
+        }
+        LineaPedido linea = new LineaPedido(lineaId, plato, cantidad, modificadores);
         lineas.add(linea);
         return linea;
+    }
+
+    public boolean tieneLinea(String lineaId) {
+        return lineas.stream().anyMatch(l -> l.getId().equals(lineaId));
     }
 
     /** RF3: solo con la orden abierta y la línea PENDIENTE. */
